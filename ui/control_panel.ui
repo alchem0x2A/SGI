@@ -148,10 +148,10 @@
     <item>
      <widget class="QToolButton" name="button_setting">
       <property name="toolTip">
-       <string>Top Camera</string>
+       <string>Settings</string>
       </property>
       <property name="whatsThis">
-       <string>Top Camera</string>
+       <string>Settings</string>
       </property>
       <property name="text">
        <string/>
