@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import sys
-import os
+from pathlib import Path
 
 
 from PyQt5.QtWidgets import QApplication, QWidget
@@ -14,8 +14,9 @@ class MainWindow(QWidget):
         self.load_ui()
 
     def load_ui(self):
-        path = os.path.join(os.path.dirname(__file__), "ui", "form.ui")
-        ui_file = QFile(path)
+        curpath = Path(__file__).parent
+        path = curpath / "ui" / "control_panel.ui"
+        ui_file = QFile(path.as_posix())
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
