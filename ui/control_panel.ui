@@ -112,7 +112,7 @@
       </property>
       <property name="icon">
        <iconset>
-        <normaloff>icons/side_cam.png</normaloff>icons/side_cam.png</iconset>
+        <normaloff>icons/side_cam_off.png</normaloff>icons/side_cam_off.png</iconset>
       </property>
       <property name="iconSize">
        <size>
@@ -135,7 +135,7 @@
       </property>
       <property name="icon">
        <iconset>
-        <normaloff>icons/top_cam.png</normaloff>icons/top_cam.png</iconset>
+        <normaloff>icons/top_cam_off.png</normaloff>icons/top_cam_off.png</iconset>
       </property>
       <property name="iconSize">
        <size>
