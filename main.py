@@ -81,15 +81,17 @@ class VideoWindow(QWidget):
         if self.radio_preview.isChecked():
             print("Preview !")
             self.camera_activated = True
+            # TODO: add possibility to switch fps
             self.timer.start(1000.0 / 30)
         else:
             print("No preview")
             self.camera_activated = False
             # Stop the timer
             self.timer.stop()
-            self.video_frame.setPixmap(QPixmap())
+            # self.video_frame.setPixmap(QPixmap())
             self.video_frame.setText("No Preview Available")
             self.video_frame.adjustSize()
+            # self.adjustSize()
         self.parent.switch_cam_state(self.which)
 
     def next_frame(self):

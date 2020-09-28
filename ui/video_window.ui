@@ -6,37 +6,30 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>732</width>
-    <height>480</height>
+    <width>642</width>
+    <height>527</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="Line" name="line">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>30</y>
-     <width>731</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
   <widget class="QLabel" name="video_frame">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>260</y>
-     <width>124</width>
-     <height>16</height>
+     <x>0</x>
+     <y>40</y>
+     <width>640</width>
+     <height>480</height>
     </rect>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
    </property>
    <property name="text">
     <string>No Preview Available</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
   </widget>
   <widget class="QWidget" name="">
@@ -44,7 +37,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>435</width>
+     <width>640</width>
      <height>32</height>
     </rect>
    </property>
