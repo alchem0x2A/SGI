@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow
-from PyQt5.QtCore import QFile, Qt
+from PyQt5.QtCore import QFile, Qt, QTimer
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5 import uic
@@ -72,6 +72,8 @@ class VideoWindow(QWidget):
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
         self.camera = cv2.VideoCapture(0)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.next_frame)
         
     # Turn on and off
     def toggle_preview(self):
@@ -79,10 +81,12 @@ class VideoWindow(QWidget):
         if self.radio_preview.isChecked():
             print("Preview !")
             self.camera_activated = True
-            self.next_frame()
+            self.timer.start(1000.0 / 30)
         else:
             print("No preview")
             self.camera_activated = False
+            # Stop the timer
+            self.timer.stop()
             self.video_frame.setPixmap(QPixmap())
             self.video_frame.setText("No Preview Available")
             self.video_frame.adjustSize()
