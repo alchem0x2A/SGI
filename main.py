@@ -6,7 +6,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow
 from PyQt5.QtCore import QFile, Qt
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5 import uic
 
 import cv2
@@ -71,17 +71,35 @@ class VideoWindow(QWidget):
 
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
+        self.camera = cv2.VideoCapture(0)
         
     # Turn on and off
     def toggle_preview(self):
         # TODO: add state check for error in video
         if self.radio_preview.isChecked():
-            self.camera_activated = True
             print("Preview !")
+            self.camera_activated = True
+            self.next_frame()
         else:
             print("No preview")
             self.camera_activated = False
+            self.video_frame.setPixmap(QPixmap())
+            self.video_frame.setText("No Preview Available")
+            self.video_frame.adjustSize()
         self.parent.switch_cam_state(self.which)
+
+    def next_frame(self):
+        # Net frame?
+        ret, frame = self.camera.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        print(frame.shape)
+        img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+        pix = QPixmap.fromImage(img)
+        self.video_frame.setPixmap(pix)
+        self.video_frame.adjustSize()
+        
+
+    
         
 
     def load_ui(self):
