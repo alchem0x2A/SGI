@@ -5,8 +5,11 @@ from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow
 from PyQt5.QtCore import QFile, Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon
 from PyQt5 import uic
+
+import cv2
 
 
 class MainWindow(QWidget):
@@ -21,52 +24,65 @@ class MainWindow(QWidget):
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
-        self.button_side_cam.clicked.connect(self.fun_window_side_cam)
-        self.button_top_cam.clicked.connect(self.fun_window_top_cam)
+        self.button_side_cam.clicked.connect(lambda: self.fun_window_cam("side"))
+        self.button_top_cam.clicked.connect(lambda: self.fun_window_cam("top"))
 
-    def fun_window_side_cam(self):
+
+    def fun_window_cam(self, which):
+        assert which in ("side", "top")
         # Start a side cam window
-        if not hasattr(self, "window_side_cam"):
-            self.window_side_cam = VideoWindow(title="Side Camera",
-                                               parent=self)
+        window_name = "window_{}_cam".format(which)
+        if not hasattr(self, window_name):
+            setattr(self, window_name,
+                    VideoWindow(title="{} Camera".format(which.capitalize()),
+                                parent=self,
+                                which=which))
         # If window not visible then show it
-        if not self.window_side_cam.isVisible():
-            self.window_side_cam.show()
+        win_obj = getattr(self, window_name)
+        if not win_obj.isVisible():
+            win_obj.show()
 
-        # TODO: check if camera really works then update icon
-        if self.window_side_cam.camera_activated:
-            self.button_side_cam.setIcon(QIcon((self.curpath / "icons" / "side_cam_on.png").as_posix()))
 
-        
-
-    def fun_window_top_cam(self):
-        # Start a side cam window
-        if not hasattr(self, "window_top_cam"):
-            self.window_top_cam = VideoWindow(title="Top Camera",
-                                              parent=self)
-        # If top window not visible then show it
-        if not self.window_top_cam.isVisible():
-            self.window_top_cam.show()
-
-        if self.window_top_cam.camera_activated:
-            self.button_top_cam.setIcon(QIcon((self.curpath / "icons" / "top_cam_on.png").as_posix()))
-            
+    def switch_cam_state(self, which):
+        # Provide which for either side or top ?
+        assert which in ("side", "top")
+        button = getattr(self, "button_{}_cam".format(which))
+        window = getattr(self, "window_{}_cam".format(which))
+        if window.camera_activated:
+            img_path = self.curpath / "icons" / "{}_cam_on.png".format(which)
+        else:
+            img_path = self.curpath / "icons" / "{}_cam_off.png".format(which)
+        button.setIcon(QIcon(img_path.as_posix()))
 
             
 class VideoWindow(QWidget):
-    def __init__(self, title="", parent=None):
+    def __init__(self, title="", parent=None, which=""):
         super(QWidget, self).__init__()
         self.load_ui()
         if title != "":
             self.setWindowTitle(title)
-        self.camera_activated = self.check_cam()
         # Quick tweak with parent window?
         if parent is not None:
             self.parent = parent
+        # TODO: must be better way to solve the button assignment?!
+        # which camera to use?
+        self.which = which
+        self.camera_activated = False
 
-    def check_cam(self):
-        # TODO: add the actual checking code here!
-        return True
+        # Turn on and off video preview
+        self.radio_preview.toggled.connect(self.toggle_preview)
+        
+    # Turn on and off
+    def toggle_preview(self):
+        # TODO: add state check for error in video
+        if self.radio_preview.isChecked():
+            self.camera_activated = True
+            print("Preview !")
+        else:
+            print("No preview")
+            self.camera_activated = False
+        self.parent.switch_cam_state(self.which)
+        
 
     def load_ui(self):
         curpath = Path(__file__).parent
@@ -75,6 +91,7 @@ class VideoWindow(QWidget):
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
+
 
 
 def mainLoop():
