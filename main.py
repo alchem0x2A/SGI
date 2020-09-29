@@ -10,12 +10,14 @@ from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5 import uic
 
 import cv2
+import imagezmq
 
 
 class MainWindow(QWidget):
     def __init__(self):
         super(QWidget, self).__init__()
         self.load_ui()
+        
 
     def load_ui(self):
         self.curpath = Path(__file__).parent
@@ -33,10 +35,16 @@ class MainWindow(QWidget):
         # Start a side cam window
         window_name = "window_{}_cam".format(which)
         if not hasattr(self, window_name):
+            # TODO: try real ports!
+            if which == "side":
+                port = 5555
+            else:
+                port = 6666
             setattr(self, window_name,
                     VideoWindow(title="{} Camera".format(which.capitalize()),
                                 parent=self,
-                                which=which))
+                                which=which,
+                                port=port))
         # If window not visible then show it
         win_obj = getattr(self, window_name)
         if not win_obj.isVisible():
@@ -56,7 +64,8 @@ class MainWindow(QWidget):
 
             
 class VideoWindow(QWidget):
-    def __init__(self, title="", parent=None, which=""):
+    def __init__(self, title="", parent=None, which="",
+                 host="localhost", port=5555):
         super(QWidget, self).__init__()
         self.load_ui()
         if title != "":
@@ -71,9 +80,19 @@ class VideoWindow(QWidget):
 
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
-        self.camera = cv2.VideoCapture(0)
+        # self.camera = cv2.VideoCapture(0)
         self.timer = QTimer()
+        self.init_imghub(host=host, port=port)
         self.timer.timeout.connect(self.next_frame)
+
+    def init_imghub(self, host="*", port=5555):
+        # Use PUB / SUB pattern
+        self.image_hub = imagezmq.ImageHub(open_port
+                                           ="tcp://*:{0:d}".format(port),
+                                               REQ_REP=True)
+        
+
+    
         
     # Turn on and off
     def toggle_preview(self):
@@ -82,7 +101,7 @@ class VideoWindow(QWidget):
             print("Preview !")
             self.camera_activated = True
             # TODO: add possibility to switch fps
-            self.timer.start(1000.0 / 30)
+            self.timer.start(1000 / 30.0)
         else:
             print("No preview")
             self.camera_activated = False
@@ -96,13 +115,15 @@ class VideoWindow(QWidget):
 
     def next_frame(self):
         # Net frame?
-        ret, frame = self.camera.read()
+        # ret, frame = self.camera.read()
+        ret, frame = self.image_hub.recv_image()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         print(frame.shape)
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix = QPixmap.fromImage(img)
         self.video_frame.setPixmap(pix)
         self.video_frame.adjustSize()
+        self.image_hub.send_reply(b'OK')
         
 
     
