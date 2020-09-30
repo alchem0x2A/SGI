@@ -26,25 +26,23 @@ class MainWindow(QWidget):
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
-        self.button_side_cam.clicked.connect(lambda: self.fun_window_cam("side"))
-        self.button_top_cam.clicked.connect(lambda: self.fun_window_cam("top"))
+        self.button_side_cam.clicked.connect(lambda: self.fun_window_cam(which="side",
+                                                                         location=0))
+        self.button_top_cam.clicked.connect(lambda: self.fun_window_cam(which="top",
+                                                                        location="http://raspberrypi.local:8081"))
 
 
-    def fun_window_cam(self, which):
+    def fun_window_cam(self, which, location):
         assert which in ("side", "top")
         # Start a side cam window
         window_name = "window_{}_cam".format(which)
         if not hasattr(self, window_name):
             # TODO: try real ports!
-            if which == "side":
-                port = 5555
-            else:
-                port = 6666
             setattr(self, window_name,
                     VideoWindow(title="{} Camera".format(which.capitalize()),
                                 parent=self,
                                 which=which,
-                                port=port))
+                                location=location))
         # If window not visible then show it
         win_obj = getattr(self, window_name)
         if not win_obj.isVisible():
@@ -64,8 +62,11 @@ class MainWindow(QWidget):
 
             
 class VideoWindow(QWidget):
-    def __init__(self, title="", parent=None, which="",
-                 host="localhost", port=5555):
+    def __init__(self, title="",
+                 parent=None,
+                 which="",
+                 host="localhost",
+                 location=0):
         super(QWidget, self).__init__()
         self.load_ui()
         if title != "":
@@ -80,17 +81,9 @@ class VideoWindow(QWidget):
 
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
-        # self.camera = cv2.VideoCapture(0)
+        self.camera = cv2.VideoCapture(location)
         self.timer = QTimer()
-        self.init_imghub(host=host, port=port)
         self.timer.timeout.connect(self.next_frame)
-
-    def init_imghub(self, host="*", port=5555):
-        # Use PUB / SUB pattern
-        self.image_hub = imagezmq.ImageHub(open_port
-                                           ="tcp://*:{0:d}".format(port),
-                                               REQ_REP=True)
-        
 
     
         
@@ -115,15 +108,14 @@ class VideoWindow(QWidget):
 
     def next_frame(self):
         # Net frame?
-        # ret, frame = self.camera.read()
-        ret, frame = self.image_hub.recv_image()
+        ret, frame = self.camera.read()
+        # ret, frame = self.image_hub.recv_image()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         print(frame.shape)
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix = QPixmap.fromImage(img)
         self.video_frame.setPixmap(pix)
         self.video_frame.adjustSize()
-        self.image_hub.send_reply(b'OK')
         
 
     
