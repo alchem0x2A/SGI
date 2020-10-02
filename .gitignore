@@ -346,3 +346,5 @@ Temporary Items
 
 # End of https://www.toptal.com/developers/gitignore/api/linux
 /test_ui/
+motion/motion.log
+motion/proc.id
