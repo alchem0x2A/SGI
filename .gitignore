@@ -348,3 +348,4 @@ Temporary Items
 /test_ui/
 motion/motion.log
 motion/proc.id
+.ssh/
