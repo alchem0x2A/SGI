@@ -31,11 +31,6 @@ class MainWindow(QWidget):
         cam_config_file = self.curpath / "config" / "cameras.json"
         with open(cam_config_file.as_posix()) as f:
             params = json.load(f)
-        # TODO: if file not exists? Check
-        # for k, v in cam_address.items():
-            # try:
-                # cam_address[k] = int(v)  # Try to set address
-            # except ValueError:
                 # pass
         # TODO: change address to address!
         self.button_side_cam.clicked.connect(lambda: self.fun_window_cam(which="side",
@@ -43,6 +38,7 @@ class MainWindow(QWidget):
         self.button_top_cam.clicked.connect(lambda: self.fun_window_cam(which="top",
                                                                         cam_params=params["top"]))
                                                                         #address="http://raspberrypi.local:8081"))
+        self.button_measurement.clicked.connect(lambda: self.fun_window_measure())
 
 
     def fun_window_cam(self, which, cam_params={}):
@@ -73,6 +69,17 @@ class MainWindow(QWidget):
         else:
             img_path = self.curpath / "icons" / "{}_cam_off.png".format(which)
         button.setIcon(QIcon(img_path.as_posix()))
+
+    def fun_window_measure(self):
+        # Open an window instance of measurement series
+        # and add to the self.windows_measurement list
+        if not hasattr(self, "windows_measurement"):
+            self.windows_measurement = []
+        new_window = MeasurementWindow(title="",
+                                       parent=self)
+        self.windows_measurement.append(new_window)
+        new_window.show()
+        
 
             
 class VideoWindow(QWidget):
@@ -163,10 +170,6 @@ class VideoWindow(QWidget):
         self.video_frame.adjustSize()
         return True
         
-        
-
-    
-        
 
     def load_ui(self):
         curpath = Path(__file__).parent
@@ -177,8 +180,23 @@ class VideoWindow(QWidget):
         ui_file.close()
 
 
+class MeasurementWindow(QWidget):
+    def __init__(self, title="", parent=None):
+        super(QWidget, self).__init__()
+        self.load_ui()
+        if parent is not None:
+            self.parent = parent
 
-def mainLoop():
+    def load_ui(self):
+        curpath = Path(__file__).parent
+        path = curpath / "ui" / "experiment_window.ui"
+        ui_file = QFile(path.as_posix())
+        ui_file.open(QFile.ReadOnly)
+        uic.loadUi(ui_file, self)
+        ui_file.close()
+
+
+def main_loop():
     # Set the high DPI display and icons
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
@@ -207,5 +225,5 @@ def init_cam(cmd):
         return -1
     
 if __name__ == "__main__":
-    mainLoop()
+    main_loop()
 
