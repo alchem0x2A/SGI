@@ -348,3 +348,5 @@ Temporary Items
 /test_ui/
 motion/motion.log
 motion/proc.id
+motion/*.log
+motion/proc.pid
