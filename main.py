@@ -11,6 +11,7 @@ from PyQt5 import uic
 
 import cv2
 import imagezmq
+import json
 
 
 class MainWindow(QWidget):
@@ -26,10 +27,22 @@ class MainWindow(QWidget):
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
+        # Load parameters for the camera address
+        cam_config_file = self.curpath / "config" / "camera_address.json"
+        with open(cam_config_file.as_posix()) as f:
+            cam_address = json.load(f)
+        # TODO: if file not exists? Check
+        for k, v in cam_address.items():
+            try:
+                v = int(v)  # Try to set address
+            except ValueError:
+                pass
+        # TODO: change location to address!
         self.button_side_cam.clicked.connect(lambda: self.fun_window_cam(which="side",
-                                                                         location=0))
+                                                                         location=cam_address["side"]))
         self.button_top_cam.clicked.connect(lambda: self.fun_window_cam(which="top",
-                                                                        location="http://raspberrypi.local:8081"))
+                                                                        location=cam_address["top"]))
+                                                                        #location="http://raspberrypi.local:8081"))
 
 
     def fun_window_cam(self, which, location):
@@ -66,7 +79,8 @@ class VideoWindow(QWidget):
                  parent=None,
                  which="",
                  host="localhost",
-                 location=0):
+                 location=0,
+                 fps=30):
         super(QWidget, self).__init__()
         self.load_ui()
         if title != "":
@@ -78,6 +92,7 @@ class VideoWindow(QWidget):
         # which camera to use?
         self.which = which
         self.camera_activated = False
+        self.fps = fps
 
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
@@ -94,7 +109,7 @@ class VideoWindow(QWidget):
             print("Preview !")
             self.camera_activated = True
             # TODO: add possibility to switch fps
-            self.timer.start(1000 / 30.0)
+            self.timer.start(int(1000 / self.fps))
         else:
             print("No preview")
             self.camera_activated = False
@@ -109,13 +124,21 @@ class VideoWindow(QWidget):
     def next_frame(self):
         # Net frame?
         ret, frame = self.camera.read()
+        # print(ret, frame)
+        # If there is no image captured, return False
+        # So that the Label is "no preview"
+        if ret is False:
+            return False
         # ret, frame = self.image_hub.recv_image()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        print(frame.shape)
+        #print(frame.shape)
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix = QPixmap.fromImage(img)
+        # TODO: Check if resizing really works
         self.video_frame.setPixmap(pix)
         self.video_frame.adjustSize()
+        return True
+        
         
 
     
@@ -139,7 +162,7 @@ def mainLoop():
     app = QApplication([])
     widget = MainWindow()
     widget.show()
-    sys.exit(app.exec_())
+    app.exec_()
     
 if __name__ == "__main__":
     mainLoop()
