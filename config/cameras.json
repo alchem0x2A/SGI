@@ -1,0 +1,14 @@
+{
+  "side": {
+	"type": "local",
+    "address": "0",
+	"init_cmd": "",
+	"fps": "30"
+	}, 
+  "top": {
+	"type": "remote",
+	"address": "http://raspberrypi.local:8081",
+	"init_cmd": "ssh -i .ssh/id_rsa pi@raspberrypi.local source \\${HOME}/SGI/motion/motion_server_start.sh",
+	"fps": "30"
+  }
+}

@@ -10,8 +10,8 @@ from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5 import uic
 
 import cv2
-import imagezmq
 import json
+import subprocess
 
 
 class MainWindow(QWidget):
@@ -28,34 +28,35 @@ class MainWindow(QWidget):
         uic.loadUi(ui_file, self)
         ui_file.close()
         # Load parameters for the camera address
-        cam_config_file = self.curpath / "config" / "camera_address.json"
+        cam_config_file = self.curpath / "config" / "cameras.json"
         with open(cam_config_file.as_posix()) as f:
-            cam_address = json.load(f)
+            params = json.load(f)
         # TODO: if file not exists? Check
-        for k, v in cam_address.items():
-            try:
-                cam_address[k] = int(v)  # Try to set address
-            except ValueError:
-                pass
-        # TODO: change location to address!
+        # for k, v in cam_address.items():
+            # try:
+                # cam_address[k] = int(v)  # Try to set address
+            # except ValueError:
+                # pass
+        # TODO: change address to address!
         self.button_side_cam.clicked.connect(lambda: self.fun_window_cam(which="side",
-                                                                         location=cam_address["side"]))
+                                                                         cam_params=params["side"]))
         self.button_top_cam.clicked.connect(lambda: self.fun_window_cam(which="top",
-                                                                        location=cam_address["top"]))
-                                                                        #location="http://raspberrypi.local:8081"))
+                                                                        cam_params=params["top"]))
+                                                                        #address="http://raspberrypi.local:8081"))
 
 
-    def fun_window_cam(self, which, location):
+    def fun_window_cam(self, which, cam_params={}):
         assert which in ("side", "top")
         # Start a side cam window
         window_name = "window_{}_cam".format(which)
+           
         if not hasattr(self, window_name):
-            # TODO: try real ports!
             setattr(self, window_name,
                     VideoWindow(title="{} Camera".format(which.capitalize()),
                                 parent=self,
                                 which=which,
-                                location=location))
+                                cam_params=cam_params))
+                                
         # If window not visible then show it
         win_obj = getattr(self, window_name)
         if not win_obj.isVisible():
@@ -78,9 +79,7 @@ class VideoWindow(QWidget):
     def __init__(self, title="",
                  parent=None,
                  which="",
-                 host="localhost",
-                 location=0,
-                 fps=30):
+                 cam_params={}):
         super(QWidget, self).__init__()
         self.load_ui()
         if title != "":
@@ -92,14 +91,32 @@ class VideoWindow(QWidget):
         # which camera to use?
         self.which = which
         self.camera_activated = False
+        self.cam_params = cam_params
+        
+        # Get address of camera, use int is possible 
+        address = cam_params["address"]
+        try:
+            address = int(address)
+        except ValueError:
+            pass
+        self.address = address
+        
+        # Set FPS; Possibly to a lower number if Video is Slaggy 
+        try:
+            fps = int(cam_params["fps"])
+        except ValueError:
+            fps = 30
         self.fps = fps
+        
 
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
-        self.camera = cv2.VideoCapture(location)
-        print(location, self.camera)
+        self.camera = cv2.VideoCapture(self.address)
+        self.camera_initialized = self.camera.isOpened()
+        print(self.address, self.camera)
         self.timer = QTimer()
         self.timer.timeout.connect(self.next_frame)
+
 
     
         
@@ -107,10 +124,16 @@ class VideoWindow(QWidget):
     def toggle_preview(self):
         # TODO: add state check for error in video
         if self.radio_preview.isChecked():
-            print("Preview !")
-            self.camera_activated = True
-            # TODO: add possibility to switch fps
-            self.timer.start(int(1000 / self.fps))
+            # If camera not initialized, try to use the cam_params["init_cmd"]
+            if not self.camera_initialized:
+                ret = init_cam(self.cam_params["init_cmd"])
+                if ret is False:
+                    self.radio_preview.setChecked(False)
+            
+            if self.camera_initialized:
+                print("Preview !")
+                self.camera_activated = True
+                self.timer.start(int(1000 / self.fps))
         else:
             print("No preview")
             self.camera_activated = False
@@ -164,6 +187,24 @@ def mainLoop():
     widget = MainWindow()
     widget.show()
     app.exec_()
+    
+    
+    
+######## OOP-independent functions ###########
+######## To be moved to other libs ###########
+def init_cam(cmd):
+    """Use subprocess to execute a command, if needed to activate the camera
+    """
+    cmd = cmd.strip()
+    if len(cmd) > 0:
+        print("Executing the activating cmd:")
+        print(cmd)
+        print("---------Output from process--------------")
+        proc = subprocess.run(cmd, shell=True)
+        return proc.returncode == 0
+    else:
+        # No command provided
+        return -1
     
 if __name__ == "__main__":
     mainLoop()
