@@ -34,7 +34,7 @@ class MainWindow(QWidget):
         # TODO: if file not exists? Check
         for k, v in cam_address.items():
             try:
-                v = int(v)  # Try to set address
+                cam_address[k] = int(v)  # Try to set address
             except ValueError:
                 pass
         # TODO: change location to address!
@@ -97,6 +97,7 @@ class VideoWindow(QWidget):
         # Turn on and off video preview
         self.radio_preview.toggled.connect(self.toggle_preview)
         self.camera = cv2.VideoCapture(location)
+        print(location, self.camera)
         self.timer = QTimer()
         self.timer.timeout.connect(self.next_frame)
 
@@ -124,7 +125,7 @@ class VideoWindow(QWidget):
     def next_frame(self):
         # Net frame?
         ret, frame = self.camera.read()
-        # print(ret, frame)
+        print(ret, frame)
         # If there is no image captured, return False
         # So that the Label is "no preview"
         if ret is False:
