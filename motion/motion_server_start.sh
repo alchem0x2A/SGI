@@ -67,7 +67,7 @@ function kill_motion_proc {
 }
 
 function main {
-    MOTION_ROOT=${HOME}/motion
+    MOTION_ROOT=${HOME}/SGI/motion
     if [[ -z "${MOTION_CONF_FILE}" ]]; then
 	MOTION_CONF_FILE=${MOTION_ROOT}/motion.conf
     fi
@@ -114,7 +114,10 @@ function main {
     done
     # Finally trying to run motion!
     echo "Trying to start motion process......"
-    ${motion_bin} -c ${MOTION_CONF_FILE} -p ${MOTION_PID_FILE} -b -m
+    ${motion_bin} \
+	  -l ${MOTION_LOG_FILE} \
+	  -c ${MOTION_CONF_FILE} \
+      	  -p ${MOTION_PID_FILE} -b -m
     check_motion_pid
     echo "Running motion on process ${motion_pid}"
 }

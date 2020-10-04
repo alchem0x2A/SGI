@@ -349,3 +349,5 @@ Temporary Items
 motion/motion.log
 motion/proc.id
 .ssh/
+motion/*.log
+motion/proc.pid
