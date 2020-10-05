@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import QFile, Qt, QTimer
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QImage, QPixmap
@@ -139,9 +139,8 @@ class VideoWindow(QWidget):
 
         self.img_buffer = getattr(self.parent,
                                   "buffer_{which}".format(which=which))
+        
 
-
-    
         
     # Turn on and off
     def toggle_preview(self):
@@ -223,6 +222,9 @@ class MeasurementWindow(QWidget):
         self.button_measure.clicked.connect(self.start_measure)
         self.button_save.clicked.connect(self.save)
 
+        # self.current_column = 0
+        
+
     def enable_controls(self, choice):
         # Enable or diable controls
         for name in ("button_measure",
@@ -247,7 +249,8 @@ class MeasurementWindow(QWidget):
         if self.locked:
             # Do nothing!
             return False
-        
+
+        print("Current column", self.table.currentColumn())
         t_interval = int(self.field_time_interval.text())
         total_counts = int(self.field_counts.text())
         # Local image buffers
@@ -258,8 +261,9 @@ class MeasurementWindow(QWidget):
         cnt = 0
         self.locked = True
 
+        self.enable_controls(False)
+        current_column = self.table.currentColumn()
         def handler():
-            self.enable_controls(False)
             # self.button_measure.setEnabled(False)
             nonlocal cnt
             cnt += 1
@@ -269,6 +273,11 @@ class MeasurementWindow(QWidget):
             # try to get images from buffer, no popping
             images_side.append(self.parent.buffer_side[-1])
             images_top.append(self.parent.buffer_top[-1])
+            # TODO: need more elegant code to do it outside
+            self.table.setItem(cnt - 1,
+                               current_column,
+                               QTableWidgetItem("---"))
+                
             # print(time.time())
             if cnt >= total_counts:
                 # self.button_measure.setEnabled(True)
@@ -286,9 +295,22 @@ class MeasurementWindow(QWidget):
         
         # Release the lock
         self.locked = False
-        # TODO: how to make column ?
+        # TODO: these functions are not correct
         self.images_side = images_side
         self.images_top = images_top
+
+        # TODO: increase selected column
+        print(self.table.verticalHeaderItem(0))
+        self.table.setCurrentCell(0, current_column + 1)
+        # TODO: fill in the columns
+        
+        # for i in range(len(self.images_side)):
+        #     tbl_item = self.table.item(i, self.current_column)
+        #     if tbl_item is None:
+        #         self.table.setItem(i, current_column,
+        #                            QTableWidgetItem("---"))
+        #     else:
+        #         tbl_item.setText("---")
         return True
 
     def save(self):
@@ -321,28 +343,12 @@ class MeasurementWindow(QWidget):
                                      format(which,
                                             cnt,
                                             len(self.images_side)))
-            self.timer.singleShot(50, lambda: handler(which=which))
+            self.timer.singleShot(0, lambda: handler(which=which))
             
-        # cnt = 0
         handler("side")
         handler("top")
-        # for i, img in enumerate(self.images_side):
-        #     rt = save_image(img,
-        #                     root / img_path.format(which="side",
-        #                                            i=i))
-        #     self.text_status.setText("Saveing images side\n{0}/{1}".
-        #                              format(i + 1,
-        #                                     len(self.images_side)))
-        #     # print(rt, i)
-        # for i, img in enumerate(self.images_top):
-        #     rt = save_image(img,
-        #                     root / img_path.format(which="top",
-        #                                            i=i))
-        #     self.text_status.setText("Saveing images top\n{0}/{1}".
-        #                              format(i + 1,
-        #                                     len(self.images_top)))
-        #     # print(rt, i)
-        #     print(rt, i)
+        # print("I'm here")
+        self.text_status.setText("")
         self.enable_controls(True)
         
         
