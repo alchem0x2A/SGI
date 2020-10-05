@@ -223,6 +223,15 @@ class MeasurementWindow(QWidget):
         self.button_measure.clicked.connect(self.start_measure)
         self.button_save.clicked.connect(self.save)
 
+    def enable_controls(self, choice):
+        # Enable or diable controls
+        for name in ("button_measure",
+                     "button_save",
+                     "field_time_interval",
+                     "field_counts",
+                     "table"):
+            getattr(self, name).setEnabled(choice)
+
     def load_ui(self):
         curpath = Path(__file__).parent
         path = curpath / "ui" / "experiment_window.ui"
@@ -250,19 +259,23 @@ class MeasurementWindow(QWidget):
         self.locked = True
 
         def handler():
-            self.button_measure.setEnabled(False)
+            self.enable_controls(False)
+            # self.button_measure.setEnabled(False)
             nonlocal cnt
             cnt += 1
             # Update text
-            self.text_status.setText("Capturing:\n {0}/{1}".format(cnt, total_counts))
+            self.text_status.setText("Capturing:\n{0}/{1}".format(cnt, total_counts))
             # print("{}:{}".format(cnt, total_counts))
             # try to get images from buffer, no popping
             images_side.append(self.parent.buffer_side[-1])
             images_top.append(self.parent.buffer_top[-1])
+            # print(time.time())
             if cnt >= total_counts:
-                self.button_measure.setEnabled(True)
+                # self.button_measure.setEnabled(True)
                 # Clear the status
-                self.timer.singleShot(1000, lambda: self.text_status.setText(""))
+                self.timer.singleShot(1000,
+                                      lambda: self.text_status.setText(""))
+                self.enable_controls(True)
                 return
             self.timer.singleShot(t_interval, handler)
 
@@ -285,16 +298,52 @@ class MeasurementWindow(QWidget):
         # TODO: remove this testing code
         root = self.parent.curpath / "test_ui"
         img_path = "img_{which}_{i}.bmp"
-        for i, img in enumerate(self.images_side):
+        # Disable in case save process is long
+        # It is a blocking process!
+        self.enable_controls(False)
+        counts = dict(side=0,
+                      top=0)
+        
+        def handler(which="side"):
+            cnt = counts[which]
+            print(which)
+            images_list = getattr(self, "images_{0}".format(which))
+            if cnt >= len(images_list):
+                counts[which] = 0
+                return
+            img = images_list[cnt]
+            cnt += 1
+            counts[which] = cnt
             rt = save_image(img,
-                            root / img_path.format(which="side",
-                                                   i=i))
-            print(rt, i)
-        for i, img in enumerate(self.images_top):
-            rt = save_image(img,
-                            root / img_path.format(which="top",
-                                                   i=i))
-            print(rt, i)
+                            root / img_path.format(which=which,
+                                                   i=cnt))
+            self.text_status.setText("Saving images {0}\n{1}/{2}".
+                                     format(which,
+                                            cnt,
+                                            len(self.images_side)))
+            self.timer.singleShot(50, lambda: handler(which=which))
+            
+        # cnt = 0
+        handler("side")
+        handler("top")
+        # for i, img in enumerate(self.images_side):
+        #     rt = save_image(img,
+        #                     root / img_path.format(which="side",
+        #                                            i=i))
+        #     self.text_status.setText("Saveing images side\n{0}/{1}".
+        #                              format(i + 1,
+        #                                     len(self.images_side)))
+        #     # print(rt, i)
+        # for i, img in enumerate(self.images_top):
+        #     rt = save_image(img,
+        #                     root / img_path.format(which="top",
+        #                                            i=i))
+        #     self.text_status.setText("Saveing images top\n{0}/{1}".
+        #                              format(i + 1,
+        #                                     len(self.images_top)))
+        #     # print(rt, i)
+        #     print(rt, i)
+        self.enable_controls(True)
         
         
         
