@@ -17,6 +17,7 @@ from collections import deque
 import time
 
 
+
 class MainWindow(QWidget):
     def __init__(self, image_buffer_size=20):
         super(QWidget, self).__init__()
@@ -176,11 +177,14 @@ class VideoWindow(QWidget):
         if ret is False:
             return False
         # ret, frame = self.image_hub.recv_image()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # Now add the image data to the buffer_side
         self.img_buffer.append(frame)
         #print(frame.shape)
-        img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+        # OpenCV used BGR format!
+        img = QImage(frame, frame.shape[1],
+                     frame.shape[0],
+                     QImage.Format_BGR888)
         pix = QPixmap.fromImage(img)
         # TODO: Check if resizing really works
         self.video_frame.setPixmap(pix)
@@ -215,8 +219,9 @@ class MeasurementWindow(QWidget):
         if parent is not None:
             self.parent = parent
         
-
+        # Setup signal
         self.button_measure.clicked.connect(self.start_measure)
+        self.button_save.clicked.connect(self.save)
 
     def load_ui(self):
         curpath = Path(__file__).parent
@@ -261,29 +266,36 @@ class MeasurementWindow(QWidget):
                 return
             self.timer.singleShot(t_interval, handler)
 
-                # timer.deleteLater()
-        # for i in range(total_counts):
-        #     # Process loops
-        #     # QApplication.processEvents()
-        #     self.images_side.append(self.parent.buffer_side[-1])
-        #     self.images_top.append(self.parent.buffer_top[-1])
-        #     # Dummy function to wait some time non-blocking
-        #     print("{}:{}".format(i+1, total_counts))
-        #     time.sleep(t_interval / 1000)
-            # timer.singleShot(t_interval, lambda: None)
-        # self.timer.timeout.connect(handler)
-        # self.timer.start(t_interval)
-
-        # while self.timer.isActive():
-            # pass
-        # Presumably should stop by now?
         handler()
+        # Presumably should stop by now?
         print(len(self.images_side),
               len(self.images_top))
         
         # Release the lock
         self.locked = False
+        # TODO: how to make column ?
+        self.images_side = images_side
+        self.images_top = images_top
         return True
+
+    def save(self):
+        # Save images and csv files
+        print(self.images_side, len(self.images_side))
+        print(self.images_top, len(self.images_top))
+        # TODO: remove this testing code
+        root = self.parent.curpath / "test_ui"
+        img_path = "img_{which}_{i}.bmp"
+        for i, img in enumerate(self.images_side):
+            rt = save_image(img,
+                            root / img_path.format(which="side",
+                                                   i=i))
+            print(rt, i)
+        for i, img in enumerate(self.images_top):
+            rt = save_image(img,
+                            root / img_path.format(which="top",
+                                                   i=i))
+            print(rt, i)
+        
         
         
 
@@ -314,6 +326,12 @@ def init_cam(cmd):
     else:
         # No command provided
         return -1
+
+def save_image(img, path):
+    # Give a PIL img matrix and Path
+    path = Path(path)
+    retcode = cv2.imwrite(path.as_posix(), img)
+    return retcode
     
 if __name__ == "__main__":
     main_loop()
