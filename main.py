@@ -7,18 +7,23 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow
 from PyQt5.QtCore import QFile, Qt, QTimer
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QImage, QPixmap
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5 import uic
 
 import cv2
 import json
 import subprocess
+from collections import deque
+import time
 
 
 class MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, image_buffer_size=20):
         super(QWidget, self).__init__()
         self.load_ui()
-        
+        # Add image buffers as deques
+        self.buffer_side = deque(maxlen=image_buffer_size)
+        self.buffer_top = deque(maxlen=image_buffer_size)
 
     def load_ui(self):
         self.curpath = Path(__file__).parent
@@ -77,8 +82,15 @@ class MainWindow(QWidget):
             self.windows_measurement = []
         new_window = MeasurementWindow(title="",
                                        parent=self)
+        # TODO: How to remove the window instance?
         self.windows_measurement.append(new_window)
         new_window.show()
+        print(self.windows_measurement)
+
+    def start_measurement(self):
+        pass
+
+    
         
 
             
@@ -124,6 +136,9 @@ class VideoWindow(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.next_frame)
 
+        self.img_buffer = getattr(self.parent,
+                                  "buffer_{which}".format(which=which))
+
 
     
         
@@ -155,13 +170,15 @@ class VideoWindow(QWidget):
     def next_frame(self):
         # Net frame?
         ret, frame = self.camera.read()
-        print(ret, frame)
+        #print(ret, frame.shape)
         # If there is no image captured, return False
         # So that the Label is "no preview"
         if ret is False:
             return False
         # ret, frame = self.image_hub.recv_image()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Now add the image data to the buffer_side
+        self.img_buffer.append(frame)
         #print(frame.shape)
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         pix = QPixmap.fromImage(img)
@@ -184,8 +201,22 @@ class MeasurementWindow(QWidget):
     def __init__(self, title="", parent=None):
         super(QWidget, self).__init__()
         self.load_ui()
+        # Set the field to contain only digits
+        self.field_time_interval.setValidator(QDoubleValidator())
+        self.field_counts.setValidator(QIntValidator())
+        # Simply use array to store?
+        self.images_side = []
+        self.images_top = []
+        self.results = []
+        # Which column is activated?
+        self.current_column = 0
+        self.locked = False
+        self.timer = QTimer()
         if parent is not None:
             self.parent = parent
+        
+
+        self.button_measure.clicked.connect(self.start_measure)
 
     def load_ui(self):
         curpath = Path(__file__).parent
@@ -195,6 +226,66 @@ class MeasurementWindow(QWidget):
         uic.loadUi(ui_file, self)
         ui_file.close()
 
+    def start_measure(self):
+        # Start the measurement
+        # Should not return error since Validators used
+        # TODO: add a thread lock to block further data acq
+        if self.locked:
+            # Do nothing!
+            return False
+        
+        t_interval = int(self.field_time_interval.text())
+        total_counts = int(self.field_counts.text())
+        # Local image buffers
+        images_side = []
+        images_top = []
+        print("Will do with: ", t_interval, total_counts)
+        print("Capturing now ........")
+        cnt = 0
+        self.locked = True
+
+        def handler():
+            self.button_measure.setEnabled(False)
+            nonlocal cnt
+            cnt += 1
+            # Update text
+            self.text_status.setText("Capturing:\n {0}/{1}".format(cnt, total_counts))
+            # print("{}:{}".format(cnt, total_counts))
+            # try to get images from buffer, no popping
+            images_side.append(self.parent.buffer_side[-1])
+            images_top.append(self.parent.buffer_top[-1])
+            if cnt >= total_counts:
+                self.button_measure.setEnabled(True)
+                # Clear the status
+                self.timer.singleShot(1000, lambda: self.text_status.setText(""))
+                return
+            self.timer.singleShot(t_interval, handler)
+
+                # timer.deleteLater()
+        # for i in range(total_counts):
+        #     # Process loops
+        #     # QApplication.processEvents()
+        #     self.images_side.append(self.parent.buffer_side[-1])
+        #     self.images_top.append(self.parent.buffer_top[-1])
+        #     # Dummy function to wait some time non-blocking
+        #     print("{}:{}".format(i+1, total_counts))
+        #     time.sleep(t_interval / 1000)
+            # timer.singleShot(t_interval, lambda: None)
+        # self.timer.timeout.connect(handler)
+        # self.timer.start(t_interval)
+
+        # while self.timer.isActive():
+            # pass
+        # Presumably should stop by now?
+        handler()
+        print(len(self.images_side),
+              len(self.images_top))
+        
+        # Release the lock
+        self.locked = False
+        return True
+        
+        
 
 def main_loop():
     # Set the high DPI display and icons
