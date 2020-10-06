@@ -133,7 +133,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>20</string>
+    <string>5</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">

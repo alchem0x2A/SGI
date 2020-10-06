@@ -169,6 +169,7 @@ class VideoWindow(QWidget):
 
     def next_frame(self):
         # Net frame?
+        # TODO: use the threaded version instead
         ret, frame = self.camera.read()
         #print(ret, frame.shape)
         # If there is no image captured, return False
@@ -213,8 +214,6 @@ class MeasurementWindow(QWidget):
         self.results = []
         # Which column is activated?
         self.current_column = 0
-        self.locked = False
-        self.timer = QTimer()
         if parent is not None:
             self.parent = parent
         
@@ -242,114 +241,109 @@ class MeasurementWindow(QWidget):
         uic.loadUi(ui_file, self)
         ui_file.close()
 
+
     def start_measure(self):
         # Start the measurement
         # Should not return error since Validators used
         # TODO: add a thread lock to block further data acq
-        if self.locked:
             # Do nothing!
-            return False
 
         print("Current column", self.table.currentColumn())
         t_interval = int(self.field_time_interval.text())
         total_counts = int(self.field_counts.text())
         # Local image buffers
-        images_side = []
-        images_top = []
+        image_col_side = []
+        image_col_top = []
         print("Will do with: ", t_interval, total_counts)
         print("Capturing now ........")
         cnt = 0
-        self.locked = True
+        current_column = self.table.currentColumn()
 
         self.enable_controls(False)
-        current_column = self.table.currentColumn()
         def handler():
-            # self.button_measure.setEnabled(False)
             nonlocal cnt
             cnt += 1
             # Update text
             self.text_status.setText("Capturing:\n{0}/{1}".format(cnt, total_counts))
-            # print("{}:{}".format(cnt, total_counts))
-            # try to get images from buffer, no popping
-            images_side.append(self.parent.buffer_side[-1])
-            images_top.append(self.parent.buffer_top[-1])
+            image_col_side.append(self.parent.buffer_side[-1])
+            image_col_top.append(self.parent.buffer_top[-1])
             # TODO: need more elegant code to do it outside
             self.table.setItem(cnt - 1,
                                current_column,
                                QTableWidgetItem("---"))
-                
+            self.table.setCurrentCell(cnt - 1,
+                                      current_column)
             # print(time.time())
             if cnt >= total_counts:
                 # self.button_measure.setEnabled(True)
                 # Clear the status
-                self.timer.singleShot(1000,
-                                      lambda: self.text_status.setText(""))
+                timer.stop()
+                timer.deleteLater()
+                cnt = 0
+                QTimer.singleShot(1000,
+                                  lambda: self.text_status.setText(""))
+                self.images_side.append(image_col_side)
+                self.images_top.append(image_col_top)
                 self.enable_controls(True)
+                self.table.setCurrentCell(0, current_column + 1)
                 return
-            self.timer.singleShot(t_interval, handler)
-
-        handler()
-        # Presumably should stop by now?
-        print(len(self.images_side),
-              len(self.images_top))
-        
-        # Release the lock
-        self.locked = False
-        # TODO: these functions are not correct
-        self.images_side = images_side
-        self.images_top = images_top
-
-        # TODO: increase selected column
-        print(self.table.verticalHeaderItem(0))
-        self.table.setCurrentCell(0, current_column + 1)
-        # TODO: fill in the columns
-        
-        # for i in range(len(self.images_side)):
-        #     tbl_item = self.table.item(i, self.current_column)
-        #     if tbl_item is None:
-        #         self.table.setItem(i, current_column,
-        #                            QTableWidgetItem("---"))
-        #     else:
-        #         tbl_item.setText("---")
+            # self.timer.singleShot(t_interval, handler)
+        timer = QTimer()
+        timer.timeout.connect(handler)
+        timer.start(t_interval)
         return True
 
+
     def save(self):
+        self.save_partial(which="side")
+        self.save_partial(which="top")
+        
+    def save_partial(self, which="side"):
         # Save images and csv files
-        print(self.images_side, len(self.images_side))
-        print(self.images_top, len(self.images_top))
         # TODO: remove this testing code
         root = self.parent.curpath / "test_ui"
         img_path = "img_{which}_{i}.bmp"
         # Disable in case save process is long
         # It is a blocking process!
         self.enable_controls(False)
-        counts = dict(side=0,
-                      top=0)
-        
-        def handler(which="side"):
-            cnt = counts[which]
-            print(which)
+        cnt = 0
+
+        def handler():
+            nonlocal cnt
+            print(which, cnt)
             images_list = getattr(self, "images_{0}".format(which))
-            if cnt >= len(images_list):
-                counts[which] = 0
+            total_c = len(images_list)
+            total_r = len(images_list[0])
+            # print(which)
+            # Use ndarray instead
+            total_imgs = len(images_list) * len(images_list[0])
+            if cnt >= total_imgs:
+                timer.stop()
+                timer.deleteLater()
+                cnt  = 0
+                QTimer.singleShot(1000,
+                                  lambda: self.text_status.setText(""))
+                self.enable_controls(True)
                 return
-            img = images_list[cnt]
+            c = cnt // total_r
+            r = cnt % total_r
+            print(total_c, total_r, c, r)
+            img = images_list[c][r]
             cnt += 1
-            counts[which] = cnt
             rt = save_image(img,
                             root / img_path.format(which=which,
                                                    i=cnt))
             self.text_status.setText("Saving images {0}\n{1}/{2}".
                                      format(which,
                                             cnt,
-                                            len(self.images_side)))
-            self.timer.singleShot(0, lambda: handler(which=which))
-            
-        handler("side")
-        handler("top")
+                                            total_imgs))
+        timer = QTimer()
+        timer.timeout.connect(handler)
+        timer.start(10)
+        # handler("side")
+        # handler("top")
         # print("I'm here")
-        self.text_status.setText("")
-        self.enable_controls(True)
+
         
         
         
@@ -362,7 +356,7 @@ def main_loop():
     app = QApplication([])
     widget = MainWindow()
     widget.show()
-    app.exec_()
+    sys.exit(app.exec_())
     
     
     
