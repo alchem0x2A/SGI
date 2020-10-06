@@ -3,7 +3,9 @@ import sys
 from pathlib import Path
 
 
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidgetItem
+from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
+from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtCore import QFile, Qt, QTimer
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QImage, QPixmap
@@ -16,6 +18,7 @@ import subprocess
 from collections import deque
 import time
 import numpy as np
+import os
 
 
 
@@ -310,14 +313,28 @@ class MeasurementWindow(QWidget):
 
 
     def save(self):
-        self.save_partial(which="side")
-        self.save_partial(which="top")
+        (filename,
+         filetype) = QFileDialog.getSaveFileName(self,
+                                                 caption=
+                                                 "Choose the name to save")
+        fn = Path(filename)
+        print(filename, fn)
+        save_root = fn.parent
+        save_name = fn.name
+        self.save_partial(which="side", root=save_root, name=save_name)
+        self.save_partial(which="top", root=save_root, name=save_name)
         
-    def save_partial(self, which="side"):
+    def save_partial(self, which="side",
+                     root=None,
+                     name=""):
         # Save images and csv files
         # TODO: remove this testing code
-        root = self.parent.curpath / "test_ui"
-        img_path = "img_{which}_{i}.bmp"
+        if root is None:
+            root = self.parent.curpath / "test_ui"
+        if not root.is_dir():
+            os.makedirs(root)
+
+        img_path = name + "_{which}_{i}.bmp"
         # Disable in case save process is long
         # It is a blocking process!
         self.enable_controls(False)
