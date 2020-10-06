@@ -15,6 +15,7 @@ import json
 import subprocess
 from collections import deque
 import time
+import numpy as np
 
 
 
@@ -88,8 +89,6 @@ class MainWindow(QWidget):
         new_window.show()
         print(self.windows_measurement)
 
-    def start_measurement(self):
-        pass
 
     
         
@@ -174,12 +173,16 @@ class VideoWindow(QWidget):
         #print(ret, frame.shape)
         # If there is no image captured, return False
         # So that the Label is "no preview"
-        if ret is False:
+        if frame is None:
+            # If ret is False then the image is None
+            empty_img = np.zeros((640, 480, 3), np.uint8)
+            self.img_buffer.append(empty_img)
             return False
+        
+        self.img_buffer.append(frame)
         # ret, frame = self.image_hub.recv_image()
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # Now add the image data to the buffer_side
-        self.img_buffer.append(frame)
         #print(frame.shape)
         # OpenCV used BGR format!
         img = QImage(frame, frame.shape[1],
@@ -265,8 +268,20 @@ class MeasurementWindow(QWidget):
             cnt += 1
             # Update text
             self.text_status.setText("Capturing:\n{0}/{1}".format(cnt, total_counts))
-            image_col_side.append(self.parent.buffer_side[-1])
-            image_col_top.append(self.parent.buffer_top[-1])
+            # try add the last img in the queue,
+            # other with add the empty img
+            try:
+                image_col_side.append(self.parent.buffer_side[-1])
+            except IndexError:
+                empty_img = np.zeros((640, 480, 3), np.uint8)
+                image_col_side.append(empty_img)
+
+            try:
+                image_col_top.append(self.parent.buffer_top[-1])
+            except IndexError:
+                empty_img = np.zeros((640, 480, 3), np.uint8)
+                image_col_top.append(empty_img)
+                
             # TODO: need more elegant code to do it outside
             self.table.setItem(cnt - 1,
                                current_column,
