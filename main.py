@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import QFile, Qt, QTimer
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QImage, QPixmap
@@ -226,6 +226,7 @@ class MeasurementWindow(QWidget):
         # Setup signal
         self.button_measure.clicked.connect(self.start_measure)
         self.button_save.clicked.connect(self.save)
+        self.button_update.clicked.connect(self.resize_table_column)
 
         # self.current_column = 0
         
@@ -377,6 +378,19 @@ class MeasurementWindow(QWidget):
         # print("I'm here")
 
         
+    def resize_table_column(self):
+        """Resize the table if possible
+        """
+        # cur_col_cnt = self.table.columnCount()
+        cur_row_cnt = self.table.rowCount()
+        new_row_cnt = int(self.field_counts.text())
+        if new_row_cnt < cur_row_cnt:
+            warningbox(self,
+                       ("Cannot update the table\n"
+                        "New row counts are less than current"),
+                       level=1)
+            return False
+        self.table.setRowCount(new_row_cnt)
         
         
 
@@ -413,7 +427,24 @@ def save_image(img, path):
     path = Path(path)
     retcode = cv2.imwrite(path.as_posix(), img)
     return retcode
-    
+
+
+def warningbox(parent, message, level=0):
+    """Popup a QMessageBox for warning information
+       levels: 
+       0 --- normal message (about)
+       1 --- warning message
+       2 --- error (critical)
+    """
+    if level == 0:
+        QMessageBox.about(parent, "", message)
+    elif level == 1:
+        QMessageBox.warning(parent, "Warning", message)
+    else:
+        QMessageBox.critical(parent, "Error", message)
+        
+
+
 if __name__ == "__main__":
     main_loop()
 

@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="rowCount">
-    <number>20</number>
+    <number>0</number>
    </property>
    <property name="columnCount">
     <number>10</number>
@@ -37,26 +37,6 @@
    <attribute name="verticalHeaderDefaultSectionSize">
     <number>20</number>
    </attribute>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
-   <row/>
    <column/>
    <column/>
    <column/>

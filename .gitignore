@@ -351,3 +351,4 @@ motion/proc.id
 .ssh/
 motion/*.log
 motion/proc.pid
+*.bmp
