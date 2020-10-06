@@ -392,6 +392,78 @@ class MeasurementWindow(QWidget):
             return False
         self.table.setRowCount(new_row_cnt)
         
+
+class ImageArray(object):
+    """Wrapper for images in a nested list
+    """
+    def __init__(self, cols=1, rows=1):
+        """Start with an empty nested list
+           array members are also `ndarray`
+        """
+        # TODO: what if cols and rows < 1?
+        self.array = np.empty((rows, cols), dtype=np.object)
+        # Maximum indices for row and column that are not empty
+        self.max_nonempty = (-1, -1)
+
+
+    def get_max_nonempty(self):
+        # TODO: update to `@getter
+        def _is_none(x):
+            """Return if the object x is none
+            """
+            return x is none
+        # morph into array version
+        is_none = np.frompyfunc(_is_none, 1, 1)
+        # Must use strong type conversion, otherwise invert will fail
+        flags = ~(is_none(self.array)).astype(np.bool)
+        # Non-empty rows and cols
+        row_idx, col_idx = np.where(flags)
+        # Get the max row and col indices, otherwise -1
+        try:
+            max_row = np.max(row_idx)
+        except ValueError:
+            max_row = -1
+        try:
+            max_col = np.max(col_idx)
+        except ValueError:
+            max_col = -1
+
+        self.max_nonempty = (max_row, max_col)
+        # TODO: is the return necessary?
+        return self.max_nonempty
+
+    def resize_array(self, rows, cols):
+        """Try to resize the array while keeping current data untouched
+        """
+        old_rows_nonempty, old_cols_nonempty = self.get_max_nonempty()
+        # Will the new table truncate existing data?
+        if (rows < old_rows_nonempty) or (cols < old_cols_nonempty):
+            return False
+
+        old_rows, old_cols = self.array.shape
+        new_array = self.array
+        # First do rows and then columns
+        if rows <= old_rows:
+            new_array = new_array[: rows + 1, :]
+        else:
+            new_array = add_rows(new_array, rows - old_rows)
+
+        if cols <= new_cols:
+            new_array = new_array[:, : cols + 1]
+        else:
+            new_array = add_columns(new_array, cols - old_cols)
+
+        self.array = new_array
+        return True
+
+    def get_shape(self):
+        # TODO: maybe getter
+        return self.array.shape
+
+    def item(self, row, col):
+        # TODO: better reload of ndarray?
+        return self.array[row, col]
+
         
 
 def main_loop():
@@ -442,7 +514,29 @@ def warningbox(parent, message, level=0):
         QMessageBox.warning(parent, "Warning", message)
     else:
         QMessageBox.critical(parent, "Error", message)
-        
+
+
+######### array-related methods####################
+def add_columns(array, cols=1):
+    """Add `cols` new columns to the right-side of the array
+    """
+    # TODO: error handling
+    rows = array.shape[0]
+    new_cols = np.empty((rows, cols), dtype=np.object)
+    new_array = np.concatenate((array, new_cols),
+                                axis=1)
+    return new_array
+
+def add_rows(array, rows=1):
+    """Add `rows` new rows below the array
+    """
+    # TODO: error handling
+    cols = array.shape[1]
+    new_rows = np.empty((rows, cols), dtype=np.object)
+    new_array = np.concatenate((array, new_rows),
+                                axis=0)
+    return new_array
+
 
 
 if __name__ == "__main__":
