@@ -18,6 +18,7 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5 import uic
 
 from SGI import utils
+from SGI.datastructure import ObjectArray
 
 
 class MainWindow(QWidget):
@@ -328,6 +329,7 @@ class MeasurementWindow(QWidget):
         print(filename, fn)
         save_root = fn.parent
         save_name = fn.name
+        self.results.truncate_array()
         self.save_partial(which="side", root=save_root, name=save_name)
         self.save_partial(which="top", root=save_root, name=save_name)
 
@@ -341,11 +343,14 @@ class MeasurementWindow(QWidget):
         if not root.is_dir():
             os.makedirs(root)
 
-        img_path = name + "_{which}_{i}.bmp"
+        img_path = name + "_{which}_R{r}C{c}.bmp"
         # Disable in case save process is long
         # It is a blocking process!
         self._enable_controls(False)
         cnt = 0
+
+        total_r, total_c = self.results.get_max_nonempty()
+        total_imgs = total_r * total_c
 
         def handler():
             nonlocal cnt
@@ -355,12 +360,30 @@ class MeasurementWindow(QWidget):
                 index = 0
             else:
                 index = 1
-            # total_c = len(images_list)
-            # total_r = len(images_list[0])
-            total_r, total_c = self.results.get_max_nonempty()
-            # print(which)
-            # Use ndarray instead
-            total_imgs = total_r * total_c
+            print(total_r, total_c)
+            # Try to save the row and col
+            c = cnt // total_r
+            r = cnt % total_r
+            print(cnt, r, c)
+            # img = images_list[c][r]
+            if self.results.get_item(r, c) is None:
+                img = img = utils.gen_empty_img()
+            else:
+                img = self.results.get_item(r, c)[index]
+                if img is None:
+                    img = utils.gen_empty_img()
+
+            rt = utils.save_image(img,
+                                  root / img_path.
+                                  format(which=which,
+                                         r=r,
+                                         c=c))
+
+            self.text_status.setText("Saving images {0}\nR{1:03d} C{2:03d}".
+                                     format(which,
+                                            r,
+                                            c))
+            cnt += 1
             if cnt >= total_imgs:
                 timer.stop()
                 timer.deleteLater()
@@ -369,21 +392,6 @@ class MeasurementWindow(QWidget):
                                   lambda: self.text_status.setText(""))
                 self._enable_controls(True)
                 return
-            r = cnt // total_r
-            c = cnt % total_r
-            print(total_c, total_r, c, r)
-            # img = images_list[c][r]
-            img = self.results.get_item(r, c)[index]
-            if img is None:
-                img = utils.gen_empty_img()
-            cnt += 1
-            rt = utils.save_image(img,
-                                  root / img_path.format(which=which,
-                                                         i=cnt))
-            self.text_status.setText("Saving images {0}\n{1}/{2}".
-                                     format(which,
-                                            cnt,
-                                            total_imgs))
         timer = QTimer()
         timer.timeout.connect(handler)
         timer.start(10)
@@ -404,80 +412,3 @@ class MeasurementWindow(QWidget):
                              level=1)
             return False
         self.table.setRowCount(new_row_cnt)
-
-
-class ObjectArray(object):
-    """Wrapper for object ndarray in a class
-    """
-
-    def __init__(self, cols=1, rows=1):
-        """Start with an empty nested list
-           array members are also `ndarray`
-        """
-        # TODO: what if cols and rows < 1?
-        self.array = np.empty((rows, cols), dtype=np.object)
-        # Maximum indices for row and column that are not empty
-        self.max_nonempty = (-1, -1)
-
-    def get_max_nonempty(self):
-        # TODO: update to `@getter
-        def _is_none(x):
-            """Return if the object x is none
-            """
-            return x is None
-        # morph into array version
-        is_none = np.frompyfunc(_is_none, 1, 1)
-        # Must use strong type conversion, otherwise invert will fail
-        flags = ~(is_none(self.array)).astype(np.bool)
-        # Non-empty rows and cols
-        row_idx, col_idx = np.where(flags)
-        # Get the max row and col indices, otherwise -1
-        try:
-            max_row = np.max(row_idx)
-        except ValueError:
-            max_row = -1
-        try:
-            max_col = np.max(col_idx)
-        except ValueError:
-            max_col = -1
-
-        self.max_nonempty = (max_row, max_col)
-        # TODO: is the return necessary?
-        return self.max_nonempty
-
-    def resize_array(self, rows, cols):
-        """Try to resize the array while keeping current data untouched
-        """
-        old_rows_nonempty, old_cols_nonempty = self.get_max_nonempty()
-        # Will the new table truncate existing data?
-        if (rows < old_rows_nonempty) or (cols < old_cols_nonempty):
-            return False
-
-        old_rows, old_cols = self.array.shape
-        new_array = self.array
-        # First do rows and then columns
-        if rows <= old_rows:
-            new_array = new_array[: rows + 1, :]
-        else:
-            new_array = utils.add_rows(new_array, rows - old_rows)
-
-        if cols <= old_cols:
-            new_array = new_array[:, : cols + 1]
-        else:
-            new_array = utils.add_columns(new_array, cols - old_cols)
-
-        self.array = new_array
-        return True
-
-    def get_shape(self):
-        # TODO: maybe getter
-        return self.array.shape
-
-    def get_item(self, row, col):
-        # TODO: better reload of ndarray?
-        return self.array[row, col]
-
-    def set_item(self, row, col, item):
-        # TODO: better reload of ndarray?
-        self.array[row, col] = item
-        return True
