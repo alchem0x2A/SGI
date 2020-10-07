@@ -400,15 +400,30 @@ class MeasurementWindow(QWidget):
         # print("I'm here")
 
     def resize_table_rows(self):
-        """Resize the table if possible
+        """Resize the table and display
         """
-        # cur_col_cnt = self.table.columnCount()
-        cur_row_cnt = self.table.rowCount()
-        new_row_cnt = int(self.field_counts.text())
-        if new_row_cnt < cur_row_cnt:
+        # The table part, very rough function just to make working
+        cur_tbl_row_cnt = self.table.rowCount()
+        cur_tbl_col_cnt = self.table.columnCount()
+        new_tbl_row_cnt = int(self.field_counts.text())
+
+        (cur_results_row_max,
+         cur_results_col_max) = self.results.get_max_nonempty()
+
+        cur_results_col_max
+        # Try to fill in the tables
+        rt = self.results.resize_array(new_tbl_row_cnt, cur_tbl_col_cnt)
+        if rt is False:
             utils.warningbox(self,
                              ("Cannot update the table\n"
                               "New row counts are less than current"),
                              level=1)
             return False
-        self.table.setRowCount(new_row_cnt)
+        # if new_row_cnt < cur_row_cnt:
+        #     utils.warningbox(self,
+        #                      ("Cannot update the table\n"
+        #                       "New row counts are less than current"),
+        #                      level=1)
+        #     return False
+        self.table.setRowCount(new_tbl_row_cnt)
+        self.table.setCurrentCell(0, cur_results_col_max)
