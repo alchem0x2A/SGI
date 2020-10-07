@@ -5,7 +5,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
-from SGI.UI import MainWindow
+from SGI.ui import MainWindow
 
 def main_loop():
     # Set the high DPI display and icons

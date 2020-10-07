@@ -2,3 +2,5 @@ opencv-python-headless
 pyqt5
 matplotlib
 pillow
+pytest
+pytest-xdist
