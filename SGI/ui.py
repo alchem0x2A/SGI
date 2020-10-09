@@ -249,6 +249,7 @@ class MeasurementWindow(QWidget):
                      "button_save",
                      "field_time_interval",
                      "field_counts",
+                     "field_columns",
                      "table"):
             getattr(self, name).setEnabled(choice)
 
