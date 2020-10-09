@@ -263,10 +263,18 @@ class MeasurementWindow(QWidget):
     def start_measure(self):
         # Start the measurement
         # Should not return error since Validators used
-        # TODO: add a thread lock to block further data acq
-        # Do nothing!
-
         print("Current column", self.table.currentColumn())
+        # Do not continue if current column reaches max
+        if (self.table.currentColumn() >= self._get_cols()) \
+           or (self.table.currentColumn() < 0):
+            utils.warningbox(self,
+                             ("Cannot capture image:\n"
+                              "Maximum column number is reached! \n"
+                              "Increase the max column number "
+                              "and try again"),
+                             level=2)
+            return False
+
         t_interval = int(self.field_time_interval.text())
         total_counts = int(self.field_counts.text())
         # Local image buffers
@@ -423,14 +431,14 @@ class MeasurementWindow(QWidget):
         rt = self.results.resize_array(new_tbl_row_cnt, new_tbl_col_cnt)
         if rt is False:
             utils.warningbox(self,
-                             ("Cannot update the table\n"
-                              "From\t{0} --> {1} rows\n"
+                             ("Cannot update the table from\n"
+                              "\t{0} --> {1} rows\n"
                               "\t{2} --> {3} columns")
                              .format(cur_tbl_row_cnt,
                                      new_tbl_row_cnt,
                                      cur_tbl_col_cnt,
                                      new_tbl_col_cnt),
-                             level=1)
+                             level=2)
             return False
         self.table.setRowCount(new_tbl_row_cnt)
         self.table.setColumnCount(new_tbl_col_cnt)
