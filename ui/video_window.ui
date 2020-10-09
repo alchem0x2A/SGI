@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QLabel" name="video_frame">
+  <widget class="ClickableLabel" name="video_frame">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -21,6 +21,9 @@
      <width>640</width>
      <height>480</height>
     </rect>
+   </property>
+   <property name="mouseTracking">
+    <bool>false</bool>
    </property>
    <property name="frameShadow">
     <enum>QFrame::Sunken</enum>
@@ -32,7 +35,7 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -125,6 +128,13 @@
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ClickableLabel</class>
+   <extends>QLabel</extends>
+   <header>SGI.ui</header>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>radio_preview</tabstop>
   <tabstop>combo_objective</tabstop>

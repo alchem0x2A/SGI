@@ -10,10 +10,10 @@ import numpy as np
 import os
 
 from PyQt5.QtWidgets import QWidget, QTableWidgetItem
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QLabel
 from PyQt5.QtCore import QFile, QTimer
-# from PyQt5.QtCore import pyqtSignal, pyqtSlot
-from PyQt5.QtGui import QIcon, QImage, QPixmap
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QIcon, QImage, QPixmap, QMouseEvent
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5 import uic
 
@@ -182,7 +182,7 @@ class VideoWindow(QWidget):
         img = QImage(frame, frame.shape[1],
                      frame.shape[0],
                      QImage.Format_BGR888)
-        pix = QPixmap.fromImage(img)
+        pix = QPixmap.fromImage(img).scaledToWidth(320)
         # TODO: Check if resizing really works
         self.video_frame.setPixmap(pix)
         self.video_frame.adjustSize()
@@ -195,6 +195,10 @@ class VideoWindow(QWidget):
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
+
+        # Try!
+        self.video_frame.doubleClicked.connect(lambda:
+                                               print("Label Video pressed"))
 
 
 class MeasurementWindow(QWidget):
@@ -467,3 +471,21 @@ class MeasurementWindow(QWidget):
         self.table.setColumnCount(new_tbl_col_cnt)
         # Set the active cell to the right column of current
         self.table.setCurrentCell(0, cur_results_col_max)
+
+
+# ###### Clickable Label for displaying pixmap
+class ClickableLabel(QLabel):
+    doubleClicked = pyqtSignal()
+
+    def __init__(self, *args, **argv):
+        """Try to copy the parameters from normal QLabel
+        """
+        super(QLabel, self).__init__(*args, **argv)
+
+    def mousePressEvent(self, event):
+        # Determine if it is a double click event
+        if event.type() == QMouseEvent.MouseButtonDblClick:
+            self.doubleClicked.emit()
+        # print(event.)
+        # print(dir(event))
+        QLabel.mousePressEvent(self, event)
