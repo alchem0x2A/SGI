@@ -205,7 +205,8 @@ class MeasurementWindow(QWidget):
         self.load_ui()
         # Set the field to contain only digits
         self.field_time_interval.setValidator(QDoubleValidator())
-        self.field_counts.setValidator(QIntValidator())
+        self.field_counts.setValidator(QIntValidator(1, 65536))
+        self.field_columns.setValidator(QIntValidator(1, 65536))
         # Simply use array to store?
 
         # self.images_side = []
@@ -218,7 +219,10 @@ class MeasurementWindow(QWidget):
         # Setup signal
         self.button_measure.clicked.connect(self.start_measure)
         self.button_save.clicked.connect(self.save)
-        self.button_update.clicked.connect(self.resize_table_rows)
+
+        # Update text field to resize table
+        self.field_counts.returnPressed.connect(self.resize_table)
+        self.field_columns.returnPressed.connect(self.resize_table)
 
         # To provide
         self._init_results()
@@ -227,13 +231,16 @@ class MeasurementWindow(QWidget):
     def _get_rows(self):
         return int(self.field_counts.text())
 
+    def _get_cols(self):
+        return int(self.field_columns.text())
+
     def _init_results(self):
         rows = self._get_rows()
-        cols = 10               # Default rows
+        cols = self._get_cols()               # Default rows
         self.results = ObjectArray(rows, cols)
 
     def _init_table(self):
-        self.resize_table_rows()
+        self.resize_table()
         self.table.setCurrentCell(0, 0)
 
     def _enable_controls(self, choice):
@@ -399,31 +406,33 @@ class MeasurementWindow(QWidget):
         # handler("top")
         # print("I'm here")
 
-    def resize_table_rows(self):
+    def resize_table(self):
         """Resize the table and display
         """
         # The table part, very rough function just to make working
         cur_tbl_row_cnt = self.table.rowCount()
         cur_tbl_col_cnt = self.table.columnCount()
-        new_tbl_row_cnt = int(self.field_counts.text())
+        new_tbl_row_cnt = self._get_rows()
+        new_tbl_col_cnt = self._get_cols()
 
         (cur_results_row_max,
          cur_results_col_max) = self.results.get_max_nonempty()
 
         cur_results_col_max
         # Try to fill in the tables
-        rt = self.results.resize_array(new_tbl_row_cnt, cur_tbl_col_cnt)
+        rt = self.results.resize_array(new_tbl_row_cnt, new_tbl_col_cnt)
         if rt is False:
             utils.warningbox(self,
                              ("Cannot update the table\n"
-                              "New row counts are less than current"),
+                              "From\t{0} --> {1} rows\n"
+                              "\t{2} --> {3} columns")
+                             .format(cur_tbl_row_cnt,
+                                     new_tbl_row_cnt,
+                                     cur_tbl_col_cnt,
+                                     new_tbl_col_cnt),
                              level=1)
             return False
-        # if new_row_cnt < cur_row_cnt:
-        #     utils.warningbox(self,
-        #                      ("Cannot update the table\n"
-        #                       "New row counts are less than current"),
-        #                      level=1)
-        #     return False
         self.table.setRowCount(new_tbl_row_cnt)
+        self.table.setColumnCount(new_tbl_col_cnt)
+        # Set the active cell to the right column of current
         self.table.setCurrentCell(0, cur_results_col_max)
