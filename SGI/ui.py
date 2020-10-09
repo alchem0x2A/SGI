@@ -164,7 +164,7 @@ class VideoWindow(QWidget):
         # Net frame?
         # TODO: use the threaded version instead
         ret, frame = self.camera.read()
-        #print(ret, frame.shape)
+        # print(ret, frame.shape)
         # If there is no image captured, return False
         # So that the Label is "no preview"
         if frame is None:
@@ -261,6 +261,9 @@ class MeasurementWindow(QWidget):
         uic.loadUi(ui_file, self)
         ui_file.close()
 
+        # The cancel button is not enabled
+        self.button_cancel.setVisible(False)
+
     def start_measure(self):
         # Start the measurement
         # Should not return error since Validators used
@@ -295,8 +298,6 @@ class MeasurementWindow(QWidget):
         print("Capturing now ........")
         cnt = 0
         current_column = self.table.currentColumn()
-
-        self._enable_controls(False)
 
         def handler():
             nonlocal cnt
@@ -339,12 +340,23 @@ class MeasurementWindow(QWidget):
                 # self.images_side.append(local_results[0] = )
                 # self.images_top.append(local_results[1])
                 self._enable_controls(True)
+                self.button_cancel.setVisible(False)
                 self.table.setCurrentCell(0, current_column + 1)
                 return
             # self.timer.singleShot(t_interval, handler)
+
+        def _stop_timer():
+            timer.stop()
+            self._enable_controls(True)
+            self.button_cancel.setVisible(False)
         timer = QTimer()
+        self.button_cancel.clicked.connect(_stop_timer)
+        # connect the cancel button
         timer.timeout.connect(handler)
         timer.start(t_interval)
+        # Should start directly
+        self._enable_controls(False)
+        self.button_cancel.setVisible(True)
         return True
 
     def save(self):
@@ -355,7 +367,7 @@ class MeasurementWindow(QWidget):
         print(filename, fn)
         save_root = fn.parent
         save_name = fn.name
-        self.results.truncate_array()
+        # self.results.truncate_array()
         self.save_partial(which="side", root=save_root, name=save_name)
         self.save_partial(which="top", root=save_root, name=save_name)
 

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>592</width>
+    <width>654</width>
     <height>511</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>10</x>
      <y>60</y>
-     <width>581</width>
+     <width>631</width>
      <height>431</height>
     </rect>
    </property>
@@ -187,6 +187,19 @@
    </property>
    <property name="text">
     <string>Max Columns</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="button_cancel">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>10</y>
+     <width>71</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>cancel</string>
    </property>
   </widget>
  </widget>
