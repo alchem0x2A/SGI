@@ -25,7 +25,15 @@ def warningbox(parent, message, level=0):
         QMessageBox.critical(parent, "Error", message)
 
 
+def questionbox(parent, message):
+    """Popup a QMessageBox for question choice
+    """
+    return QMessageBox.question(parent,
+                                "Warning",
+                                message) == QMessageBox.Yes
+
 ######### array-related methods ####################
+
 
 def add_columns(array, cols=1):
     """Add `cols` new columns to the right-side of the array

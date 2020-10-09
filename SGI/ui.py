@@ -275,6 +275,16 @@ class MeasurementWindow(QWidget):
                              level=2)
             return False
 
+        # Add warning whether the user wants to overwrite
+        if not self.results.column_is_empty(self.table.currentColumn()):
+            rt = utils.questionbox(self,
+                                   ("Will overwrite data on column {0}\n"
+                                    "Are you sure?").
+                                   format(self.table.currentColumn()))
+            print("Choice is ", rt)
+            if not rt:
+                return False
+
         t_interval = int(self.field_time_interval.text())
         total_counts = int(self.field_counts.text())
         # Local image buffers

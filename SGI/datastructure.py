@@ -8,6 +8,16 @@ import numpy as np
 from SGI.utils import add_rows, add_columns, warningbox
 
 
+def _is_none(x):
+    """Return if the object x is none
+    """
+    return x is None
+
+
+# morph into array version
+is_none = np.frompyfunc(_is_none, 1, 1)
+
+
 class ObjectArray(object):
     """Wrapper for object ndarray in a class
     """
@@ -23,12 +33,6 @@ class ObjectArray(object):
 
     def get_max_nonempty(self):
         # TODO: update to `@getter
-        def _is_none(x):
-            """Return if the object x is none
-            """
-            return x is None
-        # morph into array version
-        is_none = np.frompyfunc(_is_none, 1, 1)
         # Must use strong type conversion, otherwise invert will fail
         flags = ~(is_none(self.array)).astype(np.bool)
         # Non-empty rows and cols
@@ -70,6 +74,13 @@ class ObjectArray(object):
 
         self.array = new_array
         return True
+
+    def column_is_empty(self, col):
+        """Check if there is any data in column `col`
+        """
+        this_column = self.array[:, col]
+        # If all the items are None?
+        return np.all(is_none(this_column).astype(np.bool))
 
     def get_shape(self):
         # TODO: maybe getter
