@@ -5,9 +5,47 @@ import subprocess
 from pathlib import Path
 import numpy as np
 
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
 
 ######### UI-related methods ####################
+
+
+def get_screen_size():
+    """Get the current available screen geometry
+    """
+    screen = QDesktopWidget().screenGeometry()
+    return screen.width(), screen.height()
+
+
+def move_to_position(w, h, loc=0):
+    """Return the x, y position on the window given the `loc`.
+       If loc is a tuple, then directly set window center at `loc`,
+       Otherwise, loc is an integer from 0 to 8 representing the corners and center:
+       0--------1--------2
+       |        |        |
+       3--------4--------5
+       |        |        |
+       6--------7--------8
+    """
+    screen_w, screen_h = get_screen_size()
+    try:
+        # If loc is a tuple or list
+        center_x, center_y = loc
+        x = center_x - w / 2.0
+        y = center_y - h / 2.0
+    except TypeError:
+        loc = int(loc)
+        x, y = {0: (0, 0),
+                1: (screen_w / 2.0 - w / 2.0, 0),
+                2: (screen_w - w, 0),
+                3: (0, screen_h / 2.0 - h / 2.0),
+                4: (screen_w / 2.0 - w / 2.0, screen_h / 2.0 - h / 2.0),
+                5: (screen_w - w, screen_h / 2.0 - h / 2.0),
+                6: (0, screen_h - h),
+                7: (screen_w / 2.0 - w / 2.0, screen_h - h),
+                8: (screen_w - w, screen_h - h),
+                }[loc]
+    return x, y
 
 
 def warningbox(parent, message, level=0):

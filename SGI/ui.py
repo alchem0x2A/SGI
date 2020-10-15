@@ -52,6 +52,9 @@ class MainWindow(QWidget):
         self.button_measurement.clicked.connect(
             lambda: self.fun_window_measure())
 
+        # move position of window?
+        self.move(*utils.move_to_position(self.width(), self.height(), 1))
+
     def fun_window_cam(self, which, cam_params={}):
         assert which in ("side", "top")
         # Start a side cam window
@@ -99,6 +102,7 @@ class VideoWindow(QWidget):
                  which="",
                  cam_params={}):
         super(QWidget, self).__init__()
+        self.which = which
         if parent is not None:
             self.parent = parent
         self.load_ui()
@@ -107,7 +111,6 @@ class VideoWindow(QWidget):
         # Quick tweak with parent window?
         # TODO: must be better way to solve the button assignment?!
         # which camera to use?
-        self.which = which
         self.camera_activated = False
         self.cam_params = cam_params
 
@@ -199,6 +202,14 @@ class VideoWindow(QWidget):
         # Try!
         self.video_frame.doubleClicked.connect(lambda:
                                                print("Label Video pressed"))
+        if self.which == "side":
+            loc = 0
+        elif self.which == "top":
+            loc = 2
+        else:
+            loc = 4
+
+        self.move(*utils.move_to_position(self.width(), self.height(), loc=loc))
 
 
 class MeasurementWindow(QWidget):
@@ -267,6 +278,9 @@ class MeasurementWindow(QWidget):
 
         # The cancel button is not enabled
         self.button_cancel.setVisible(False)
+        self.move(*utils.move_to_position(self.width(),
+                                          self.height(),
+                                          loc=7))
 
     def start_measure(self):
         # Start the measurement
