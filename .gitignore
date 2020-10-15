@@ -353,3 +353,4 @@ motion/*.log
 motion/proc.pid
 *.bmp
 /testing/*.mp4
+/*.png

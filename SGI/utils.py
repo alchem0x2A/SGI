@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np
 
 from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt
 
 ######### UI-related methods ####################
 
@@ -109,6 +111,81 @@ def save_image(img, path):
     path = Path(path)
     retcode = cv2.imwrite(path.as_posix(), img)
     return retcode
+
+
+def img_to_pixmap(img, scale=1.0, img_format=QImage.Format_BGR888):
+    """Convert an opencv image array to QPixmap
+       return: QPixmap, (width, height)
+    """
+    bytes_per_pixel = 3         # For RGB
+    qimg = QImage(img, img.shape[1], img.shape[0],
+                  img.shape[1] * bytes_per_pixel,  img_format)
+    width = img.shape[1]
+    height = img.shape[0]
+    w_ = int(width * scale)
+    h_ = int(height * scale)
+    if w_ > h_:
+        pix = QPixmap.fromImage(qimg).scaledToWidth(
+            w_, mode=Qt.SmoothTransformation)
+    else:
+        pix = QPixmap.fromImage(qimg).scaledToHeight(
+            h_, mode=Qt.SmoothTransformation)
+    return pix, (w_, h_)
+
+
+def generate_ruler(length=640, height=30, dpp=4, side="x"):
+    """Generate a pixmap instance for the video image
+       ddp: distance per pixel 
+    """
+    font = cv2.FONT_HERSHEY_PLAIN
+    line = cv2.LINE_AA
+    black = (0, 0, 0)
+    height = height
+    img = np.ones((height, length, 3), np.uint8) * 255  # white image
+
+    def _draw_ruler(positions, texts, thickness=2):
+        """Positions are the main ticks
+        """
+        # draw main line
+        cv2.line(img, (0, 0), (length, 0), black, thickness, line)
+        # draw main ticks
+        for i, (p, s) in enumerate(zip(positions, texts)):
+            cv2.line(img, (p, 0), (p, 10), black, thickness, line)
+            (w, h), f = cv2.getTextSize(s, font, 1, 1)
+            # Align the text
+            if i == 0:
+                # First align on left
+                pp = p
+            elif i < len(positions) - 1:
+                # Other align on center
+                pp = p - w // 2
+            else:
+                # Try to make on the right most
+                pp = min(length - w, p - w // 2)
+            cv2.putText(img, s, (pp, 24), font, 1, black, 1, line)
+
+    def _get_best_grading():
+        """Get best grading and text
+        """
+        possible_main_grading = np.array([10, 20, 25, 40, 50,
+                                          100, 200, 250, 400,
+                                          500, 1000])
+        total_dist = length * dpp
+        # Get the most suitable grading
+        num_gradings = total_dist / possible_main_grading
+        best_grading = possible_main_grading[num_gradings <= 7][0]
+        best_num = num_gradings[num_gradings <= 7][0]
+        dist = np.arange(best_num) * best_grading
+        pos = (dist / dpp).astype(np.int)
+        texts = ["{0:d}".format(int(d)) for d in dist]
+        return pos, texts
+
+    _draw_ruler(*_get_best_grading())
+
+    if side == "x":
+        return img
+    else:
+        return cv2.rotate(img, cv2.cv2.ROTATE_90_CLOCKWISE)
 
 
 ###### Config-related functions #####################

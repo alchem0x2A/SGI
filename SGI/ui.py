@@ -1,5 +1,6 @@
 """All the UI classes goes here
 """
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from pathlib import Path
 import cv2
 import json
@@ -18,8 +19,12 @@ from PyQt5.QtGui import QIcon, QImage, QPixmap, QMouseEvent
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5 import uic
 
+
 from SGI import utils
 from SGI.datastructure import ObjectArray
+
+import matplotlib
+matplotlib.use("Qt5Agg")
 
 
 class MainWindow(QWidget):
@@ -190,6 +195,30 @@ class VideoWindow(QWidget):
         # self.adjustSize()
         self.parent.switch_cam_state(self.which)
 
+    def update_rulers(self, w, h, dpp=1):
+        # Pixmap on x and y axes
+        scale = self.current_scale()
+        img_x = utils.generate_ruler(w,
+                                     dpp=dpp,
+                                     side="x")
+        img_y = utils.generate_ruler(h,
+                                     dpp=dpp,
+                                     side="y")
+
+        pix_x, (w_x, h_x) = utils.img_to_pixmap(img_x, scale=scale)
+        print("Geom ruler x : ", w_x, h_x)
+        pix_y, (w_y, h_y) = utils.img_to_pixmap(img_y, scale=scale)
+        print("Geom ruler y : ", w_y, h_y)
+        # Try to save debug
+        # Add the pix on the
+        self.ruler_x.setPixmap(pix_x)
+        self.ruler_y.setPixmap(pix_y)
+        # Fix size
+        # self.ruler_x.setFixedSize(QSize(w_x, h_x))
+        # WHAT THE BLACK MAGIC?!!!
+        # The layout reset only works when fix the y-ruler size
+        self.ruler_y.setFixedSize(QSize(w_y, h_y))
+
     def next_frame(self):
         # Net frame?
         # TODO: use the threaded version instead
@@ -209,15 +238,16 @@ class VideoWindow(QWidget):
         # Now add the image data to the buffer_side
         # print(frame.shape)
         # OpenCV used BGR format!
-        img = QImage(frame, frame.shape[1],
-                     frame.shape[0],
-                     QImage.Format_BGR888)
+        # img = QImage(frame, frame.shape[1],
+        # frame.shape[0],
+        # QImage.Format_BGR888)
         scale = self.current_scale()
-        width = frame.shape[1]
-        height = frame.shape[0]
-        w_ = int(width * scale)
-        h_ = int(height * scale)
-        pix = QPixmap.fromImage(img).scaledToWidth(w_)
+        # width = frame.shape[1]
+        # height = frame.shape[0]
+        # w_ = int(width * scale)
+        # h_ = int(height * scale)
+        # pix = QPixmap.fromImage(img).scaledToWidth(w_)
+        pix, (w_, h_) = utils.img_to_pixmap(frame, scale=scale)
         self.video_frame.setPixmap(pix)
 
         # Extra steps to resize the frame and window
@@ -225,8 +255,11 @@ class VideoWindow(QWidget):
         current_h = self.video_frame.height()
         if w_ != current_w:
             print("resizing window to scale {0}.".format(scale))
-            self.video_frame.setFixedSize(QSize(w_, h_))
-            self.setFixedSize(self.layout().sizeHint())
+            # self.video_frame.setFixedSize(QSize(w_, h_))
+            self.update_rulers(frame.shape[1], frame.shape[0])
+            hint = self.layout().sizeHint()
+            print(hint)
+            self.setFixedSize(hint)
         return True
 
     def load_ui(self):
