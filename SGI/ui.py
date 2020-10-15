@@ -157,8 +157,36 @@ class VideoWindow(QWidget):
 
         # Try to resize?
         self.min_geom = (self.width(), self.height())
+        self._read_dpp()
+
+        self.combo_objective.currentIndexChanged.connect(self.update_rulers)
+        self.combo_magnification.currentIndexChanged.connect(
+            self.update_rulers)
+
+        # Original image geometry
+        self.img_geom_origin = (640, 480)
 
     # Turn on and off
+    def _read_dpp(self):
+        rootdir = self.parent.rootdir
+        with open(rootdir / "config" / "scale.json", "r") as f:
+            params = json.load(f)[self.which]
+        # Add options
+        added_ = []
+        for obj in params.keys():
+            self.combo_objective.addItem(obj)
+            for zoom in params[obj].keys():
+                if zoom not in added_:
+                    added_.append(zoom)
+                    self.combo_magnification.addItem(zoom)
+        self.dpp_params = params
+
+    def _get_dpp(self):
+        obj = self.combo_objective.currentText()
+        zoom = self.combo_magnification.currentText()
+        dpp = self.dpp_params[obj][zoom]
+        print(obj, zoom, dpp)
+        return float(dpp)
 
     def toggle_preview(self):
         """Try to activate the camera preview
@@ -195,9 +223,12 @@ class VideoWindow(QWidget):
         # self.adjustSize()
         self.parent.switch_cam_state(self.which)
 
-    def update_rulers(self, w, h, dpp=1):
+    def update_rulers(self):
         # Pixmap on x and y axes
+        w, h = self.img_geom_origin
         scale = self.current_scale()
+        dpp = self._get_dpp()
+
         img_x = utils.generate_ruler(w,
                                      dpp=dpp,
                                      side="x")
@@ -225,6 +256,8 @@ class VideoWindow(QWidget):
         # Net frame?
         # TODO: use the threaded version instead
         ret, frame = self.camera.read()
+        # Maybe do not need to change so frequently?
+        self.img_geom_origin = (frame.shape[1], frame.shape[0])
         # print(ret, frame.shape)
         # If there is no image captured, return False
         # So that the Label is "no preview"
@@ -258,7 +291,7 @@ class VideoWindow(QWidget):
         if w_ != current_w:
             print("resizing window to scale {0}.".format(scale))
             # self.video_frame.setFixedSize(QSize(w_, h_))
-            self.update_rulers(frame.shape[1], frame.shape[0])
+            self.update_rulers()
             hint = self.layout().sizeHint()
             print(hint)
             self.setFixedSize(hint)
