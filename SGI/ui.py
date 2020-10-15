@@ -4,14 +4,15 @@ from pathlib import Path
 import cv2
 import json
 import subprocess
-from collections import deque
 import time
 import numpy as np
+import sys
 import os
+from collections import deque
 
 from PyQt5.QtWidgets import QWidget, QTableWidgetItem
 from PyQt5.QtWidgets import QFileDialog, QLabel
-from PyQt5.QtCore import QFile, QTimer
+from PyQt5.QtCore import QFile, QTimer, QSize
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QMouseEvent
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
@@ -56,21 +57,30 @@ class MainWindow(QWidget):
         self.move(*utils.move_to_position(self.width(), self.height(), 1))
 
     def fun_window_cam(self, which, cam_params={}):
+        """The fun_window_cam starts a new VideoWindow instance if not existing.
+           Video preview should start automatically.
+        """
         assert which in ("side", "top")
         # Start a side cam window
         window_name = "window_{}_cam".format(which)
 
+        # For first creation, try to start the preview
+        first_time = False
         if not hasattr(self, window_name):
             setattr(self, window_name,
                     VideoWindow(title="{} Camera".format(which.capitalize()),
                                 parent=self,
                                 which=which,
                                 cam_params=cam_params))
+            first_time = True
 
         # If window not visible then show it
+        # Otherwise try to switch the preview state
         win_obj = getattr(self, window_name)
-        if not win_obj.isVisible():
-            win_obj.show()
+        if win_obj.isVisible() or first_time:
+            win_obj.toggle_preview()
+            # self.switch_cam_state(which)
+        win_obj.show()
 
     def switch_cam_state(self, which):
         # Provide which for either side or top ?
@@ -127,7 +137,7 @@ class VideoWindow(QWidget):
         self.fps = fps
 
         # Turn on and off video preview
-        self.radio_preview.toggled.connect(self.toggle_preview)
+        # self.radio_preview.toggled.connect(self.toggle_preview)
         self.camera = cv2.VideoCapture(self.address)
         self.camera_initialized = self.camera.isOpened()
         print(self.address, self.camera)
@@ -137,21 +147,31 @@ class VideoWindow(QWidget):
         self.img_buffer = getattr(self.parent,
                                   "buffer_{which}".format(which=which))
 
+        # Try to resize?
+        self.min_geom = (self.width(), self.height())
+
     # Turn on and off
 
     def toggle_preview(self):
-        # TODO: add state check for error in video
-        if self.radio_preview.isChecked():
+        """Try to activate the camera preview
+        """
+        if self.camera_activated is False:
             # If camera not initialized, try to use the cam_params["init_cmd"]
             if not self.camera_initialized:
                 ret = utils.init_cam(self.cam_params["init_cmd"])
                 if ret is False:
-                    self.radio_preview.setChecked(False)
+                    print("Having problem initializing the camera on {0}!"
+                          .format(self.which),
+                          file=sys.stderr)
 
             if self.camera_initialized:
                 print("Preview !")
                 self.camera_activated = True
+                size_hint = self.layout().sizeHint()
+                print(size_hint)
                 self.timer.start(int(1000 / self.fps))
+                # self.setFixedSize(self.layout().sizeHint())
+                self.setFixedSize(QSize(640, 500))
         else:
             print("No preview")
             self.camera_activated = False
@@ -159,8 +179,11 @@ class VideoWindow(QWidget):
             self.timer.stop()
             # self.video_frame.setPixmap(QPixmap())
             self.video_frame.setText("No Preview Available")
-            self.video_frame.adjustSize()
-            # self.adjustSize()
+            print(self.min_geom)
+            self.setFixedSize(QSize(*self.min_geom))
+            # self.video_frame.adjustSize()
+        # self.setFixedSize()
+        # self.adjustSize()
         self.parent.switch_cam_state(self.which)
 
     def next_frame(self):
@@ -185,10 +208,11 @@ class VideoWindow(QWidget):
         img = QImage(frame, frame.shape[1],
                      frame.shape[0],
                      QImage.Format_BGR888)
-        pix = QPixmap.fromImage(img).scaledToWidth(320)
+        # pix = QPixmap.fromImage(img).scaledToWidth(320)
+        pix = QPixmap.fromImage(img)
         # TODO: Check if resizing really works
         self.video_frame.setPixmap(pix)
-        self.video_frame.adjustSize()
+        # self.video_frame.adjustSize()
         return True
 
     def load_ui(self):
