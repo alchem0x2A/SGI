@@ -124,6 +124,9 @@ class VideoWindow(QWidget):
         self.camera_activated = False
         self.cam_params = cam_params
 
+        # scale of the window and current selection
+        self.video_scales = [(1.0, 0.75, 0.5), 0]
+
         # Get address of camera, use int is possible
         address = cam_params["address"]
         self.address = utils.handle_address(address,
@@ -170,8 +173,8 @@ class VideoWindow(QWidget):
                 size_hint = self.layout().sizeHint()
                 print(size_hint)
                 self.timer.start(int(1000 / self.fps))
-                # self.setFixedSize(self.layout().sizeHint())
-                self.setFixedSize(QSize(640, 500))
+                self.setFixedSize(self.layout().sizeHint())
+                # self.setFixedSize(QSize(640, 500))
         else:
             print("No preview")
             self.camera_activated = False
@@ -180,7 +183,8 @@ class VideoWindow(QWidget):
             # self.video_frame.setPixmap(QPixmap())
             self.video_frame.setText("No Preview Available")
             print(self.min_geom)
-            self.setFixedSize(QSize(*self.min_geom))
+            self.setFixedSize(self.layout().sizeHint())
+            # self.setFixedSize(QSize(*self.min_geom))
             # self.video_frame.adjustSize()
         # self.setFixedSize()
         # self.adjustSize()
@@ -208,11 +212,21 @@ class VideoWindow(QWidget):
         img = QImage(frame, frame.shape[1],
                      frame.shape[0],
                      QImage.Format_BGR888)
-        # pix = QPixmap.fromImage(img).scaledToWidth(320)
-        pix = QPixmap.fromImage(img)
-        # TODO: Check if resizing really works
+        scale = self.current_scale()
+        width = frame.shape[1]
+        height = frame.shape[0]
+        w_ = int(width * scale)
+        h_ = int(height * scale)
+        pix = QPixmap.fromImage(img).scaledToWidth(w_)
         self.video_frame.setPixmap(pix)
-        # self.video_frame.adjustSize()
+
+        # Extra steps to resize the frame and window
+        current_w = self.video_frame.width()
+        current_h = self.video_frame.height()
+        if w_ != current_w:
+            print("resizing window to scale {0}.".format(scale))
+            self.video_frame.setFixedSize(QSize(w_, h_))
+            self.setFixedSize(self.layout().sizeHint())
         return True
 
     def load_ui(self):
@@ -222,10 +236,9 @@ class VideoWindow(QWidget):
         ui_file.open(QFile.ReadOnly)
         uic.loadUi(ui_file, self)
         ui_file.close()
+        # Try the tester
+        self.video_frame.doubleClicked.connect(self.change_scale)
 
-        # Try!
-        self.video_frame.doubleClicked.connect(lambda:
-                                               print("Label Video pressed"))
         if self.which == "side":
             loc = 0
         elif self.which == "top":
@@ -234,6 +247,19 @@ class VideoWindow(QWidget):
             loc = 4
 
         self.move(*utils.move_to_position(self.width(), self.height(), loc=loc))
+
+    def current_scale(self):
+        """Get the current scaling of video
+        """
+        scale_values, index = self.video_scales
+        return scale_values[index]
+
+    def change_scale(self):
+        """ Resize the window in a round-robin fashion
+        """
+        scale_values, index = self.video_scales
+        index = (index + 1) % len(scale_values)
+        self.video_scales[1] = index
 
 
 class MeasurementWindow(QWidget):
