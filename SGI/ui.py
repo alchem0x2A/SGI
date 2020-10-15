@@ -205,9 +205,11 @@ class VideoWindow(QWidget):
                                      dpp=dpp,
                                      side="y")
 
-        pix_x, (w_x, h_x) = utils.img_to_pixmap(img_x, scale=scale)
+        pix_x, (w_x, h_x) = utils.img_to_pixmap(
+            img_x, scale=scale, code="rgba")
         print("Geom ruler x : ", w_x, h_x)
-        pix_y, (w_y, h_y) = utils.img_to_pixmap(img_y, scale=scale)
+        pix_y, (w_y, h_y) = utils.img_to_pixmap(
+            img_y, scale=scale, code="rgba")
         print("Geom ruler y : ", w_y, h_y)
         # Try to save debug
         # Add the pix on the
@@ -247,7 +249,7 @@ class VideoWindow(QWidget):
         # w_ = int(width * scale)
         # h_ = int(height * scale)
         # pix = QPixmap.fromImage(img).scaledToWidth(w_)
-        pix, (w_, h_) = utils.img_to_pixmap(frame, scale=scale)
+        pix, (w_, h_) = utils.img_to_pixmap(frame, scale=scale, code="bgr")
         self.video_frame.setPixmap(pix)
 
         # Extra steps to resize the frame and window

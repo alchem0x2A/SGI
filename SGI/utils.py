@@ -113,13 +113,37 @@ def save_image(img, path):
     return retcode
 
 
-def img_to_pixmap(img, scale=1.0, img_format=QImage.Format_BGR888):
+def set_transparent(img):
+    """Convert white field in RGBA to transparent
+       img should be an rgba or bgra image
+    """
+    assert img.shape[-1] == 4
+    white_pix = np.all(img == [255, 255, 255, 255], axis=-1)
+    # print(white_pix)
+    img[white_pix, -1] = 0
+    # return img
+
+
+def img_to_pixmap(img, scale=1.0, code="rgb"):
     """Convert an opencv image array to QPixmap
        return: QPixmap, (width, height)
     """
-    bytes_per_pixel = 3         # For RGB
+    if code.lower() == "rgb":
+        img_format = QImage.Format_RGB888
+        bytes_per_pixel = 3         # For RGB
+    elif code.lower() == "bgr":
+        img_format = QImage.Format_BGR888
+        bytes_per_pixel = 3         # for bgr
+    elif code.lower() == "rgba":
+        img_format = QImage.Format_RGBA8888
+        bytes_per_pixel = 4
+    else:
+        img_format = QImage.Format_Grayscale8
+        bytes_per_pixel = 1
+    # Need to fix the problem with background
     qimg = QImage(img, img.shape[1], img.shape[0],
-                  img.shape[1] * bytes_per_pixel,  img_format)
+                  img.shape[1] * bytes_per_pixel,
+                  img_format)
     width = img.shape[1]
     height = img.shape[0]
     w_ = int(width * scale)
@@ -182,6 +206,8 @@ def generate_ruler(length=640, height=30, dpp=4, side="x"):
 
     _draw_ruler(*_get_best_grading())
 
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+    set_transparent(img)
     if side == "x":
         return img
     else:
