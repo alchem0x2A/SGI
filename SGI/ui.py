@@ -22,7 +22,7 @@ from PyQt5 import uic
 
 from SGI import utils
 from SGI.datastructure import ObjectArray
-
+from SGI.dispenser import make_droplet
 import matplotlib
 matplotlib.use("Qt5Agg")
 
@@ -490,6 +490,8 @@ class MeasurementWindow(QWidget):
         # connect the cancel button
         timer.timeout.connect(handler)
         timer.start(t_interval)
+        # Try to make the droplet
+        make_droplet()
         # Should start directly
         self._enable_controls(False)
         self.button_cancel.setVisible(True)
