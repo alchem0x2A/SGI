@@ -67,3 +67,17 @@ The theoretical upper bound of framerate is limited by the underlying library of
 3. Make sure ssh into the VM is possible. Likely the bridged network is necessary.
 4. Install the requirements: `sudo apt-get install git curl python3 python3-pip python3-venv motion`
 5. Disable the default motion service 
+
+
+## Usage
+#### Video capture
+<img src="img/dispense_clip.gif" width="640"/>
+
+#### Resizing video preview window
+<img src="img/resizing_clip1.gif" width="640"/>
+
+#### Change video preview scales
+<img src="img/scaling_clip.gif" width="640"/>
+
+
+
