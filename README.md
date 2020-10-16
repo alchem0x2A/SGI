@@ -1,5 +1,12 @@
 # Simple Goniometer Interface (SGI)
 
+Simple Goniometer Interface (SGI) is a set of opensource software tools to be
+used as the user interface to contact angle goniometers, including
+dispensing control, image acquisition and data processing.
+
+Example UI on a particular machine looks like follows:
+![Main UI](img/main-ui.png "Example UI of SGI")
+
 ## The idea
 **TODO** Provide a universal interface for Goniometer device that allows synchronized video / image capture.
 ### Setup
