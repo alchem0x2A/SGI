@@ -7,7 +7,10 @@ of `SGI` are written using `python` based on the `PyQt5` and `OpenCV` suits.
 
 ### Example GUI appearance 
 The appearance of `SGI` on a particular machine (hardware: MCA-3, KYOWA, OS: Window) looks as image below, 
-containing a main control panel, two video preview windows of side and top cameras, and a worksheet for data acquisition
+containing 
+- Main control panel
+- Video preview windows of side and top cameras
+- Worksheet for data acquisition
 ![Main UI](img/main-ui.png "Example UI of SGI")
 
 ### Compatible platform and hardware
@@ -26,6 +29,7 @@ The theoretical upper bound of framerate is limited by the underlying library of
 `SGI` provides abstract interface to the actual hardware code which can be further customized. 
 
 ### Functionalities
+
 - [x] Video preview and synchronization
 - [x] Scale bar visualization during preview
 - [x] Easy-to-modify camera configurations
@@ -37,11 +41,25 @@ The theoretical upper bound of framerate is limited by the underlying library of
 - [ ] *TODO* Droplet volume calculation
 
 ## The idea
-**TODO** Provide a universal interface for Goniometer device that allows synchronized video / image capture.
-### Setup
-**TODO** Customized MCA-3
-### Workflow
-**TODO** *Draw the scheme of the interface*?
+
+`SGI` was originally developed to add support for synchronized image capture on commercial contact 
+angle goniometers, as such functionality was absent in the proprietary goniometer software.
+`SGI` also aims to provide a universal interface for contact angle goniometer devices with ability to 
+
+### Hardware Setup
+
+The following hardware components are required in combination with `SGI`. 
+
+- Long working distance optical lenses to be used for both side and top images (e.g. 12X zooming lens from [Navitar](https://navitar.com/products/imaging-optics/high-magnification-imaging/12x-zoom/))
+- (Optional) Long working distance adaptor objectives (e.g. 2X ~ 10X Mitutoyo [M Plan Apo objectives](https://www.mitutoyo.co.jp/eng/support/service/catalog/04/E14020.pdf))
+- Industrial cameras for image capturing (e.g. TIS [USB3 cameras](https://www.theimagingsource.com/products/industrial-cameras/usb-3.0-monochrome/)). If the camera used analog video output, analog to USB video converters are also needed.
+- Programmable liquid dispenser. Ideally they can be communicated via usb / RS232 ports.
+
+**Note**: when mixing cameras / video capture cards from different manufactures, 
+their drivers may cause confliction when capturing on the same bus line.
+A possible solution is to use an external SBM such as Raspberry Pi to 
+isolate image capturing and stream the video via ethernet / firewire to the PC.
+
 
 ## Installation
 ### Control computer part
