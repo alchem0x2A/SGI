@@ -6,6 +6,7 @@ import time
 
 # Initialization required!
 
+
 def make_droplet(port="COM3", baud=9600, timeout=0.5, parity="even"):
     if parity == "even":
         par = serial.PARITY_EVEN
@@ -18,6 +19,15 @@ def make_droplet(port="COM3", baud=9600, timeout=0.5, parity="even"):
         if not ser.is_open:
             result = False
         else:
+            # Sequence for initializing COM
+            ser.write(b"CR\r\n")
+            b = ser.readline()
+            print("Read", b)
+            # TODO: error handling
+            # b should be "CC"
+            if "CC" not in b.decode("ascii"):
+                return False
+            # Start communication
             ser.write(b"ST 7100\r\n")
             b = ser.readline()
             print("Read", b)
@@ -27,9 +37,11 @@ def make_droplet(port="COM3", baud=9600, timeout=0.5, parity="even"):
             else:
                 result = False
     return result
-    
+
+
 def main():
     print(make_droplet())
+
 
 if __name__ == "__main__":
     main()
